@@ -1,0 +1,67 @@
+### Send POST request with json body
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "a",
+  "password": "a"
+}
+
+###
+
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "Olegych1",
+  "password": "Password1"
+}
+
+###
+
+POST 127.0.0.1:8080/api/user/logout
+Content-Type: application/json
+
+{
+  "session": "0efd611e-d2d9-4bbf-aad2-95fd9e5e7f1e"
+}
+
+###
+
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "Olegych1",
+  "firstname": "Aleh1",
+  "surname": "Aleh1",
+  "password": "Password1",
+  "email": "EMAIL1",
+  "phoneNumber": "123456671",
+  "sex": "Male",
+  "userType": "Teacher"
+}
+
+
+###
+
+GET 127.0.0.1:8080/api/user/by-id/123
+Content-Type: application/json
+
+###
+
+GET 127.0.0.1:8080/api/user/by-id/1
+Content-Type: application/json
+
+###
+
+
+GET 127.0.0.1:8080/api/user/by-login/Olegych
+Content-Type: application/json
+
+###
+
+GET 127.0.0.1:8080/api/user/by-login/12
+Content-Type: application/json
+
+###
