@@ -1,8 +1,9 @@
-POST 127.0.0.1:8080/api/teacher/bio-update/273fe100-57e8-4aa6-9676-2ce4fab14ec9
+POST 127.0.0.1:8080/api/teacher/bio-update
 Content-Type: application/json
+Authorization: 81b0b764-3ad0-4398-b045-4549ed0f5eb7
 
 {
-  "bio": "new bio"
+  "bio": "new bio1234"
 }
 
 ###
@@ -12,14 +13,13 @@ Content-Type: application/json
 
 ###
 
-POST 127.0.0.1:8080/api/teacher/new_lesson/19a3d87c-98c1-4462-8084-6c9b24afa8f0
+POST 127.0.0.1:8080/api/teacher/new_lesson
 Content-Type: application/json
+Authorization: 81b0b764-3ad0-4398-b045-4549ed0f5eb7
 
 {
   "teacherId": 1,
   "date": "2023-01-01T00:00:00Z",
   "price": 500.0,
   "zoomLink": "zoomzoom"
-
-
 }

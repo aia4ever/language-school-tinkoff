@@ -13,7 +13,7 @@ case class Teacher(
                   averageGrade: Option[Double],
                   gradeAmount: Option[Int]
                   ) {
-  def toInsert: TeacherInsert = TeacherInsert(id, firstname, surname, sex, bio, averageGrade, gradeAmount)
+  def toInsert: TeacherInsert = TeacherInsert(id, firstname, surname, sex.toString, bio, averageGrade, gradeAmount)
 }
 
 
@@ -22,7 +22,7 @@ object Teacher {
                             id: Long,
                             firstname: String,
                             surname: String,
-                            sex: Sex,
+                            sex: String,
                             bio: Option[String],
                             averageGrade: Option[Double],
                             gradeAmount: Option[Int]

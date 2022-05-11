@@ -2,6 +2,7 @@ package student
 
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
+import doobie.implicits.legacy.instant._
 import lesson.Lesson
 
 object StudentRepository {
@@ -36,6 +37,7 @@ object StudentRepository {
          order by lesson_date
        """
       .query[Lesson].stream.compile.toList
+
 
   def previousLessons(studentId: Long): ConnectionIO[List[Lesson]] =
     sql"""

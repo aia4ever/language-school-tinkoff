@@ -9,7 +9,7 @@ case class Student(
                     surname: String,
                     sex: Sex
                   ) {
-  def toInsert: Insert = Insert(id, firstname, surname, sex)
+  def toInsert: Insert = Insert(id, firstname, surname, sex.toString)
 }
 
 
@@ -18,6 +18,6 @@ object Student {
                             id: Long,
                             firstname: String,
                             surname: String,
-                            sex: Sex
+                            sex: String
                           )
 }

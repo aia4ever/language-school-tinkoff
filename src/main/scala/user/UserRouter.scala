@@ -1,14 +1,13 @@
 package user
 
 import cats.effect.IO
-import data.req.{LoginReq, LogoutReq}
+import data.req.LoginReq
 import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{EntityEncoder, HttpRoutes}
-
-import util.Util.rest
+import util.Util.{auth, rest}
 
 
 object UserRouter {
@@ -27,10 +26,14 @@ object UserRouter {
       case req@POST -> Root / "login" => req.decodeJson[LoginReq].flatMap(userService.login)
         .forbidden
 
-      case req@POST -> Root / "logout"  => req.decodeJson[LogoutReq].flatMap(userService.logout)
-        .forbidden
+      case req@GET -> Root / "logout"  => (for {
+        session <- auth(req)
+        res <- userService.logout(session)
+      } yield res).forbidden
 
-      case DELETE -> Root /  "delete" / LongVar(id) / session => userService.deleteUser(id, session)
+      case req@DELETE -> Root /  "delete" / LongVar(id)  => (for {
+        session <- auth(req)
+        res <- userService.deleteUser(id, session)} yield res)
         .flatMap(_ => Ok(s"User with id:$id deleted"))
         .handleErrorWith(err => Forbidden(err.getMessage.asJson))
 

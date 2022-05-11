@@ -19,12 +19,15 @@ Content-Type: application/json
 
 ###
 
-POST 127.0.0.1:8080/api/user/logout
+GET 127.0.0.1:8080/api/user/logout
 Content-Type: application/json
+Authorization: a292a2c2-cd21-4d58-973e-7af65a78c71d
 
-{
-  "session": "0efd611e-d2d9-4bbf-aad2-95fd9e5e7f1e"
-}
+###
+
+GET 127.0.0.1:8080/api/user/logout
+Content-Type: application/json
+#Authorization: a292a2c2-cd21-4d58-973e-7af65a78c71d
 
 ###
 
@@ -56,7 +59,7 @@ Content-Type: application/json
 ###
 
 
-GET 127.0.0.1:8080/api/user/by-login/Olegych
+GET 127.0.0.1:8080/api/user/by-login/Olegych1
 Content-Type: application/json
 
 ###

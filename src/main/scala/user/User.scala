@@ -30,7 +30,6 @@ case class User(
                  sex : Sex,
                  userType: UserType
                ) {
-
   def toInsert: Insert = Insert(login, firstname, surname, password, email, phoneNumber, sex.toString, userType.toString)
 }
 
