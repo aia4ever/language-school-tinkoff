@@ -55,7 +55,7 @@ name := "flyway-sbt-test1"
 libraryDependencies += "org.hsqldb" % "hsqldb" % "2.5.0"
 
 flywayUrl := "jdbc:postgresql://localhost:5432/postgres"
-flywayUser := "aia4ever"
+flywayUser := "user"
 flywayPassword := "password"
 flywayLocations += ("db/migration")
 

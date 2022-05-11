@@ -20,7 +20,7 @@ object DI {
   val xa: Aux[IO, Unit] = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql://localhost:5432/postgres",
-    "aia4ever",
+    "user",
     "password"
   )
 

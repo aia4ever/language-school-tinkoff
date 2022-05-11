@@ -21,7 +21,7 @@ Content-Type: application/json
 
 GET 127.0.0.1:8080/api/user/logout
 Content-Type: application/json
-Authorization: a292a2c2-cd21-4d58-973e-7af65a78c71d
+Authorization: 4243e22a-9a42-4f14-a052-ae6630b483dd
 
 ###
 
