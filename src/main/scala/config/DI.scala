@@ -4,13 +4,14 @@ import cats.data._
 import cats.effect._
 import doobie._
 import doobie.util.transactor.Transactor.Aux
+import lesson.{DBLessonRepository, LessonRepository}
 import org.http4s.server.Router
 import org.http4s.{Request, Response}
-import session.SessionService
+import session.{DBSessionRepository, SessionRepository, SessionService}
 import student.StudentRouter.studentRouter
-import student.StudentService
+import student.{DBStudentRepository, StudentRepository, StudentService}
 import teacher.TeacherRouter.teacherRouter
-import teacher.TeacherService
+import teacher.{DBTeacherRepository, TeacherRepository, TeacherService}
 import user.UserRouter.userRouter
 import user._
 
@@ -24,15 +25,25 @@ object DI {
     "password"
   )
 
-  val userService: UserService = new UserService(xa)
-  val teacherService: TeacherService = new TeacherService(xa)
-  val sessionService: SessionService = new SessionService(xa)
-  val studentService: StudentService = new StudentService(xa)
+  val studentRep: StudentRepository = new DBStudentRepository
+  val teacherRep: TeacherRepository = new DBTeacherRepository
+  val userRep: UserRepository = new DBUserRepository
+  val sessionRep: SessionRepository = new DBSessionRepository
+  val lessonRep: LessonRepository = new DBLessonRepository
 
-    val httpResource: Resource[IO, Kleisli[IO, Request[IO], Response[IO]]] =
-      Resource.pure(Router[IO]
-        (mappings = "api/user" -> userRouter(userService),
+
+  val userService: UserService = new UserService(xa, userRep, sessionRep)
+  val teacherService: TeacherService = new TeacherService(xa, teacherRep, lessonRep)
+  val sessionService: SessionService = new SessionService(xa, sessionRep)
+  val studentService: StudentService = new StudentService(xa, studentRep, lessonRep)
+
+  val httpResource: Resource[IO, Kleisli[IO, Request[IO], Response[IO]]] =
+    Resource.pure(
+      Router[IO](
+        mappings =
+          "api/user" -> userRouter(userService),
           "api/teacher" -> teacherRouter(teacherService, sessionService),
           "api/student" -> studentRouter(studentService, sessionService, teacherService)
-        ).orNotFound)
+      ).orNotFound
+    )
 }

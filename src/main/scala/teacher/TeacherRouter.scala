@@ -76,13 +76,15 @@ object TeacherRouter {
         res <- teacherService.updateLesson(request, id)
       } yield res).forbidden
 
-      case DELETE -> Root / "lesson" / LongVar(id) / session =>
+      case req@DELETE -> Root / "lesson" / LongVar(id)  =>
         (for {
+          session <- auth(req)
           teacherId <- sessionService.checkSession(session)
           res <- teacherService.deleteLesson(id, teacherId)
         } yield res).forbidden
 
-      case req@POST -> Root / "withdrawal" / session => (for {
+      case req@POST -> Root / "withdrawal" => (for {
+        session <- auth(req)
         request <- req.decodeJson[Double]
         id <- sessionService.checkSession(session)
         res <- teacherService.withdrawal(id, request)

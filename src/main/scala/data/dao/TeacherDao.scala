@@ -14,6 +14,6 @@ case class TeacherDao(
                      ) {
 
 
-  def toTeacher: Teacher = Teacher(id, firstname, surname, sex, bio, averageGrade, gradeAmount)
+  lazy val toTeacher: Teacher = Teacher(id, firstname, surname, sex, bio, averageGrade, gradeAmount)
 
 }

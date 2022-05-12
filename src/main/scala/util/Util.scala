@@ -19,9 +19,6 @@ object Util {
     case None => IO.raiseError(new Exception("no session"))
   }
   implicit class rest[T](io: IO[T]) {
-
-
-
     def forbidden(implicit enc: Encoder[T]): IO[Response[IO]] =
       io
         .flatMap(res => Ok(res.asJson))

@@ -11,6 +11,6 @@ case class StudentDao(
                      ) {
 
 
-  def toStudent: Student = Student(id, firstname, surname, sex)
+ lazy val toStudent: Student = Student(id, firstname, surname, sex)
 
 }

@@ -9,39 +9,39 @@ import session.SessionRepository
 
 import java.util.UUID
 
-class UserService(xa: Aux[IO, Unit]) {
+class UserService(xa: Aux[IO, Unit], uRep: UserRepository, sRep: SessionRepository) {
 
   def userNotFound = throw new Exception("User not found")
 
-  def logout(session: String): IO[Unit] = UserRepository.logout(session).transact(xa).map {
+  def logout(s: String): IO[Unit] = uRep.logout(s).transact(xa).map {
     case 1 => ()
     case 0 => throw new Exception("Invalid session")
   }
 
-  def byLogin(login: String): IO[User] = UserRepository.findByLogin(login).transact(xa).map {
+  def byLogin(login: String): IO[User] = uRep.findByLogin(login).transact(xa).map {
     case Some(us) => us.toUser
     case None => userNotFound
   }
-  def byId(id: Long): IO[User] = UserRepository.findById(id).transact(xa).map {
+  def byId(id: Long): IO[User] = uRep.findById(id).transact(xa).map {
     case Some(us) => us.toUser
     case None => userNotFound
   }
 
 
-  def create(insert: User.Insert): IO[User] = UserRepository.create(insert).transact(xa).map(_.toUser)
+  def create(insert: User.Insert): IO[User] = uRep.create(insert).transact(xa).map(_.toUser)
 
-  def deleteUser(id: Long, session: String): IO[Int] = (for {
-    idOpt <- SessionRepository.checkSession(session)
+  def deleteUser(id: Long, s: String): IO[Int] = (for {
+    idOpt <- sRep.checkSession(s)
     res <- idOpt match {
-      case Some(_id) if id == _id => UserRepository.deleteAcc(id)
+      case Some(_id) if id == _id => uRep.deleteAcc(id)
       case _ =>  throw new Exception("???")
     }
   } yield res).transact(xa)
 
   def login(req: LoginReq): IO[String] =
-    UserRepository.findByLogin(req.login).flatMap{
+    uRep.findByLogin(req.login).flatMap{
       case Some(user) if user.password == req.password =>
-        UserRepository.createSession(user.id, UUID.randomUUID().toString)
+        uRep.createSession(user.id, UUID.randomUUID().toString)
       case _ => throw new Exception("Invalid login/password")
     }.transact(xa)
 }

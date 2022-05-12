@@ -15,11 +15,11 @@ Content-Type: application/json
 
 POST 127.0.0.1:8080/api/teacher/new_lesson
 Content-Type: application/json
-Authorization: 4243e22a-9a42-4f14-a052-ae6630b483dd
+Authorization: 834ffc68-0abe-4499-b65a-f7332283c510
 
 {
   "teacherId": 1,
-  "date": "2023-01-01T00:00:00Z",
+  "date": "2023-01-01T01:01:00Z",
   "price": 500.0,
   "zoomLink": "zoomzoom"
 }

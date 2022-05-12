@@ -6,10 +6,8 @@ import doobie.util.transactor.Transactor.Aux
 import util.Implicits._
 
 
-class SessionService(xa: Aux[IO, Unit]) {
-
-
-  def checkSession(session: String): IO[Long] = SessionRepository.checkSession(session).transact(xa)
+class SessionService(xa: Aux[IO, Unit], sRep: SessionRepository) {
+  def checkSession(s: String): IO[Long] = sRep.checkSession(s).transact(xa)
     .map {
     case Some(id) => id
     case None => throw new IllegalAccessException("Invalid session")

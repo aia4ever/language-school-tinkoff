@@ -43,7 +43,6 @@ object StudentRouter {
         (for {
           session <- auth(req)
           studentId <- sessionService.checkSession(session)
-          _ <- studentService.lesson(id)
           is <- studentService.isStudent(studentId)
           res <- if (is) studentService.signUp(id, studentId)
           else IO.raiseError(throw new Exception("You are not a Student"))

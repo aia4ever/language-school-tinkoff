@@ -16,6 +16,6 @@ case class UserDao(
                   ) {
 
 
-  def toUser: User = User(id, login, firstname, surname, password, email, phoneNumber, sex, userType)
+  lazy val toUser: User = User(id, login, firstname, surname, password, email, phoneNumber, sex, userType)
 
 }
