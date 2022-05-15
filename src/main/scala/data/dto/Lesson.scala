@@ -1,4 +1,4 @@
-package lesson
+package data.dto
 
 import java.time.Instant
 
@@ -11,7 +11,8 @@ case class Lesson(
                    studentId: Option[Long],
                    homework: Option[String],
                    answer: Option[String],
-                   mark: Option[Double]
+                   mark: Option[Double],
+                   purchased: Boolean
                  )
 
 object Lesson {

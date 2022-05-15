@@ -1,22 +1,9 @@
-package user
+package data.dto
 
-import user.User.Insert
-
-
-sealed trait UserType
-
-case object Student extends UserType
-
-case object Teacher extends UserType
-
-case object Moderator extends UserType
+import data.dto.User.Insert
+import util.{Sex, UserType}
 
 
-sealed trait Sex
-
-case object Female extends Sex
-
-case object Male extends Sex
 
 
 case class User(

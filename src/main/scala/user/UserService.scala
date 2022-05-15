@@ -1,6 +1,7 @@
 package user
 
 import cats.effect.IO
+import data.dto.User
 import data.req._
 import doobie.free.implicits._
 import doobie.implicits._
@@ -15,13 +16,9 @@ class UserService(xa: Aux[IO, Unit], uRep: UserRepository, sRep: SessionReposito
 
   def logout(s: String): IO[Unit] = uRep.logout(s).transact(xa).map {
     case 1 => ()
-    case 0 => throw new Exception("Invalid session")
+    case 0 => new Exception("Invalid session")
   }
 
-  def byLogin(login: String): IO[User] = uRep.findByLogin(login).transact(xa).map {
-    case Some(us) => us.toUser
-    case None => userNotFound
-  }
   def byId(id: Long): IO[User] = uRep.findById(id).transact(xa).map {
     case Some(us) => us.toUser
     case None => userNotFound
@@ -39,7 +36,7 @@ class UserService(xa: Aux[IO, Unit], uRep: UserRepository, sRep: SessionReposito
   } yield res).transact(xa)
 
   def login(req: LoginReq): IO[String] =
-    uRep.findByLogin(req.login).flatMap{
+    uRep.findByLoginNonBlocked(req.login).flatMap{
       case Some(user) if user.password == req.password =>
         uRep.createSession(user.id, UUID.randomUUID().toString)
       case _ => throw new Exception("Invalid login/password")

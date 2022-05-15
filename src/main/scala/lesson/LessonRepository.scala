@@ -1,5 +1,6 @@
 package lesson
 
+import data.dto.Lesson
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 import doobie.implicits.legacy.instant._

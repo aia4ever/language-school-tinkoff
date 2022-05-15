@@ -1,0 +1,35 @@
+###
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "a",
+  "password": "a"
+}
+
+###
+
+POST 127.0.0.1:8080/api/student/evaluate-teacher
+Content-Type: application/json
+Authorization: 29e6a530-4dd5-483e-9085-03ef1e792ff8
+
+{
+  "teacherId": 2,
+  "rate": 15.0
+}
+
+###
+
+GET 127.0.0.1:8080/api/student/lessons/1
+
+###
+
+POST 127.0.0.1:8080/api/student/lesson/1/sign-up
+Content-Type: application/json
+Authorization: 29e6a530-4dd5-483e-9085-03ef1e792ff8
+
+###
+
+POST 127.0.0.1:8080/api/student/lesson/1/sign-out
+Content-Type: application/json
+Authorization: 29e6a530-4dd5-483e-9085-03ef1e792ff8

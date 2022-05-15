@@ -16,6 +16,7 @@ class DBStudentRepository extends StudentRepository {
     sql"""
         select average_grade, grade_amount from teacher_extension
         where teacher_id = $teacherId
+        for update skip locked
        """
       .query[(Double, Int)].option
 
@@ -28,4 +29,5 @@ class DBStudentRepository extends StudentRepository {
             grade_amount = $newAmount
          """
       .update.run
+
 }

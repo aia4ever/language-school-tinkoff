@@ -1,10 +1,10 @@
 package teacher
 
 import cats.effect.IO
+import data.dto.{Lesson, Teacher}
 import data.req.BioReq
 import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
-import lesson.Lesson
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{EntityEncoder, HttpRoutes}
@@ -27,7 +27,7 @@ object TeacherRouter {
           id <- sessionService.checkSession(session)
           is <- teacherService.isTeacher(id)
           res <- if (is) teacherService.newLesson(request, id)
-          else IO.raiseError(throw new Exception("You are not a Teacher"))
+          else IO.raiseError(new Exception("You are not a Teacher"))
         } yield res).forbidden
 
       case req@POST -> Root / "bio-update" => (for {
@@ -36,7 +36,7 @@ object TeacherRouter {
         id <- sessionService.checkSession(session)
         is <- teacherService.isTeacher(id)
         res <- if (is) teacherService.insertOrUpdateBio(id, request.bio)
-        else IO.raiseError(throw new Exception("You are not a Teacher"))
+        else IO.raiseError(new Exception("You are not a Teacher"))
       } yield res).forbidden
 
       case GET -> Root / "all_teachers" => teacherService.allTeachers().flatMap(res => Ok(res.asJson))
@@ -57,7 +57,7 @@ object TeacherRouter {
         res <- teacherService.nextLesson(id)
       } yield res).forbidden
 
-      case req@GET -> Root / "previous-lessons" / session => (for {
+      case req@GET -> Root / "previous-lessons" => (for {
         session <- auth(req)
         id <- sessionService.checkSession(session)
         res <- teacherService.previousLessons(id)

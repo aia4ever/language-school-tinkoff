@@ -2,13 +2,15 @@ package student
 
 import cats.effect.IO
 import cats.effect.IO.asyncForIO
+import data.dto.Lesson
 import data.req.GradeReq
 import doobie.implicits._
 import doobie.util.transactor.Transactor.Aux
-import lesson.{Lesson, LessonRepository}
+import lesson.LessonRepository
+import user.UserRepository
 
 
-class StudentService(xa: Aux[IO, Unit], stRep: StudentRepository, lRep: LessonRepository) {
+class StudentService(xa: Aux[IO, Unit])(stRep: StudentRepository, lRep: LessonRepository, uRep: UserRepository) {
 
   def isStudent(studentId: Long): IO[Boolean] =
     stRep.isStudent(studentId).transact(xa).map {
@@ -17,7 +19,7 @@ class StudentService(xa: Aux[IO, Unit], stRep: StudentRepository, lRep: LessonRe
     }
 
 
-  def cashIn(amount: Double): IO[Double] = ???
+  def cashIn(id: Long, amount: Double): IO[BigDecimal] = uRep.cashIn(id, amount).transact(xa)
 
   def evaluateTeacherUpdate(req: GradeReq): IO[Int] =
     (for {
@@ -39,19 +41,30 @@ class StudentService(xa: Aux[IO, Unit], stRep: StudentRepository, lRep: LessonRe
 
   def signUp(lessonId: Long, studentId: Long): IO[Lesson] = (
     for {
-      lesson <- lRep.emptyLesson(lessonId)
-      date = lesson match {
-        case Some(l) => l.date
+      lessonOpt <- lRep.emptyLesson(lessonId)
+      lesson = lessonOpt match {
+        case Some(l) => l
         case None => throw new Exception("You can't access this lesson")
       }
-      list <- lRep.studentLessonsByDate(studentId, date)
+      list <- lRep.studentLessonsByDate(studentId, lesson.date)
+      balance <- uRep.balance(studentId)
+      _ <- if (balance._1 > lesson.price) uRep.reserve(studentId, lesson.price)
+      else throw new Exception("Not enough money")
       res <- if (list.isEmpty) lRep.signUp(lessonId, studentId)
              else throw new Exception("You have another lesson on this time")
     } yield res).transact(xa)
 
 
   def signOut(lessonId: Long, studentId: Long): IO[Int] =
-    lRep.signOut(lessonId, studentId).transact(xa)
+    (for {
+      lessonOpt <- lRep.studentLesson(lessonId, studentId)
+      lesson = lessonOpt match {
+        case Some(ls) => ls
+        case None => throw new Exception("Something went wrong")
+      }
+      _ <- uRep.unreserve(lessonId, lesson.price)
+      res <- lRep.signOut(lessonId, studentId)
+    } yield res ).transact(xa)
 
   def lessonsByTeacher(teacherId: Long): IO[List[Lesson]] =
     lRep.lessonsByTeacher(teacherId).transact(xa)
@@ -66,4 +79,6 @@ class StudentService(xa: Aux[IO, Unit], stRep: StudentRepository, lRep: LessonRe
       case Some(ls) => ls
       case None => throw new Exception("Something went wrong")
     }
+
+
 }

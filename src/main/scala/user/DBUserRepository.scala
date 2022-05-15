@@ -1,6 +1,7 @@
 package user
 
 import data.dao.UserDao
+import data.dto.User
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 
@@ -26,8 +27,8 @@ class DBUserRepository extends UserRepository {
   def findById(id: Long): ConnectionIO[Option[UserDao]] =
     (base ++ fr" where id = $id").query[UserDao].option
 
-  def findByLogin(login: String): ConnectionIO[Option[UserDao]] =
-    (base ++ fr" where login = $login").query[UserDao].option
+  def findByLoginNonBlocked(login: String): ConnectionIO[Option[UserDao]] =
+    (base ++ fr" where login = $login and not is_blocked").query[UserDao].option
 
   def deleteById(id: Long): ConnectionIO[Int] =
     sql"""
@@ -39,4 +40,42 @@ class DBUserRepository extends UserRepository {
 
   def logout(session: String): ConnectionIO[Int] =
     sql"delete from session where session = $session".update.run
+
+  override def cashIn(userId: Long, amount: BigDecimal): ConnectionIO[BigDecimal] =
+    sql"""
+         update user_table
+         set wallet = (select wallet from user_table where id = $userId) + $amount
+         where id = $userId
+       """
+      .update.withUniqueGeneratedKeys("id", "wallet")
+
+  def balance(id: Long): ConnectionIO[(BigDecimal, BigDecimal)] =
+    sql"""
+         select wallet, reserved from user_table
+        where id = $id
+       """
+      .query[(BigDecimal, BigDecimal)].unique
+
+  def withdrawal(userId: Long, amount: BigDecimal): ConnectionIO[BigDecimal] =
+    sql"""
+         update user_table
+          set wallet = $amount
+           where id = $userId
+       """.update.withUniqueGeneratedKeys("wallet")
+
+  def reserve(id: Long, amount: BigDecimal) : ConnectionIO[Int] =
+    sql"""
+        update user_table
+         set wallet = wallet - $amount,
+             reserved = reserved + $amount
+         where id = $id
+       """.update.run
+
+  def unreserve(id: Long, amount: BigDecimal) : ConnectionIO[Int] =
+    sql"""
+        update user_table
+         set wallet = wallet + $amount,
+             reserved = reserved - $amount
+         where id = $id
+       """.update.run
 }

@@ -1,6 +1,6 @@
 package data.dao
 
-import student.Student
+import data.dto.Student
 import util.Implicits._
 
 case class StudentDao(

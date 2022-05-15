@@ -1,9 +1,5 @@
 package util
 
-import user._
-
-
-
 object Implicits {
   implicit def stringToUserType(string: String): UserType =
     string match {

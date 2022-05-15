@@ -1,12 +1,14 @@
 package teacher
 
 import cats.effect.IO
+import data.dto.{Lesson, Teacher}
 import doobie.util.transactor.Transactor.Aux
-import lesson.{Lesson, LessonRepository}
+import lesson.LessonRepository
 import doobie.implicits._
+import user.UserRepository
 
 
-class TeacherService(xa: Aux[IO, Unit], tRep: TeacherRepository, lRep: LessonRepository) {
+class TeacherService(xa: Aux[IO, Unit])(tRep: TeacherRepository, lRep: LessonRepository, uRep: UserRepository) {
 
   def deleteLesson(lessonId: Long, teacherId: Long): IO[Int] = lRep.deleteLesson(lessonId, teacherId).transact(xa)
 
@@ -50,7 +52,12 @@ class TeacherService(xa: Aux[IO, Unit], tRep: TeacherRepository, lRep: LessonRep
 
   def previousLessons(teacherId: Long): IO[List[Lesson]] = lRep.previousLessonsByTeacher(teacherId).transact(xa)
 
-  def withdrawal(teacherId: Long, amount: Double): IO[Double] = ???
+  def withdrawal(teacherId: Long, amount: BigDecimal): IO[BigDecimal] =
+    (for {
+      balance <- uRep.balance(teacherId)
+      res <-  if (balance._1 >= amount) uRep.withdrawal(teacherId, amount)
+      else throw new Exception("Not enough money")
+    } yield res).transact(xa)
 
   def findTeacher(teacherId: Long): IO[Teacher] = tRep.getTeacher(teacherId).transact(xa).map {
     case Some(teacher) => teacher.toTeacher

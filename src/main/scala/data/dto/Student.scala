@@ -1,7 +1,7 @@
-package student
+package data.dto
 
-import student.Student.Insert
-import user.Sex
+import data.dto.Student.Insert
+import util.Sex
 
 case class Student(
                     id: Long,

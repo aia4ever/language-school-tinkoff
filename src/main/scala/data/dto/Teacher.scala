@@ -1,7 +1,7 @@
-package teacher
+package data.dto
 
-import teacher.Teacher.TeacherInsert
-import user.Sex
+import data.dto.Teacher.Insert
+import util.Sex
 
 
 case class Teacher(
@@ -13,12 +13,12 @@ case class Teacher(
                   averageGrade: Option[Double],
                   gradeAmount: Option[Int]
                   ) {
-  def toInsert: TeacherInsert = TeacherInsert(id, firstname, surname, sex.toString, bio, averageGrade, gradeAmount)
+  def toInsert: Insert = Insert(id, firstname, surname, sex.toString, bio, averageGrade, gradeAmount)
 }
 
 
 object Teacher {
-  case class TeacherInsert(
+  case class Insert(
                             id: Long,
                             firstname: String,
                             surname: String,
