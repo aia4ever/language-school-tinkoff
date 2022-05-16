@@ -43,7 +43,7 @@ create table lesson
     homework    varchar,
     answer      varchar,
     mark        decimal,
-    status      boolean default false
+    is_purchased      boolean default false
 );
 
 

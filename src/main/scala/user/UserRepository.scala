@@ -1,7 +1,7 @@
 package user
 
 import data.dao.UserDao
-import data.dto.User
+import data.dto.{Lesson, User}
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 
@@ -31,5 +31,7 @@ trait UserRepository {
   def reserve(id: Long, amount: BigDecimal) : ConnectionIO[Int]
 
   def unreserve(id: Long, amount: BigDecimal) : ConnectionIO[Int]
+
+  def payment(lesson: Lesson): ConnectionIO[Int]
 
 }

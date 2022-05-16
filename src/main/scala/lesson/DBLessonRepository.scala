@@ -14,7 +14,7 @@ class DBLessonRepository extends LessonRepository {
     Seq("id", "teacher_id", "lesson_date", "price", "zoom_link", "student_id", "homework", "answer", "mark", "purchased")
 
   val base =
-    sql"select id, teacher_id, lesson_date, price, zoom_link, student_id, homework, answer, mark, status from lesson"
+    sql"select id, teacher_id, lesson_date, price, zoom_link, student_id, homework, answer, mark, is_purchased from lesson"
 
 
   def createLesson(insert: Lesson.Insert): ConnectionIO[Lesson] =
@@ -76,7 +76,7 @@ class DBLessonRepository extends LessonRepository {
     sql"""
         update lesson
         set student_id = $studentId
-            where id = $lessonId
+            where id = $lessonId and lesson_date >= current_timestamp
        """
       .update
       .withUniqueGeneratedKeys[Lesson](cols: _*)
@@ -87,6 +87,7 @@ class DBLessonRepository extends LessonRepository {
         update lesson
         set student_id = null
             where id = $lessonId and student_id = $studentId
+            and lesson_date >= current_timestamp
        """
       .update.run
 

@@ -7,6 +7,9 @@ import lesson.LessonRepository
 import doobie.implicits._
 import user.UserRepository
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 
 class TeacherService(xa: Aux[IO, Unit])(tRep: TeacherRepository, lRep: LessonRepository, uRep: UserRepository) {
 
@@ -65,5 +68,21 @@ class TeacherService(xa: Aux[IO, Unit])(tRep: TeacherRepository, lRep: LessonRep
   }
 
   def allTeachers(): IO[List[Teacher]] = tRep.getAllTeachers.map(_.map(_.toTeacher)).transact(xa)
+
+  def payment(lessonId: Long, teacherId: Long): IO[Int] =
+    (for {
+      lessonOpt <- lRep.teacherLesson(lessonId, teacherId)
+      lesson = lessonOpt match {
+        case Some(ls) => ls
+        case None => throw new Exception("There is no lesson with this ID")
+      }
+      isPurchased = lesson.purchased
+      studentId = lesson.studentId.fold(0L)(identity)
+      date = lesson.date
+     res <- if (studentId != 0 && !isPurchased && date.plus(1,ChronoUnit.HOURS).isBefore(Instant.now())) {
+       tRep.updateLessonStatus(lessonId, teacherId)
+       uRep.payment(lesson)
+     } else throw new Exception("Payment can't be made")
+    } yield res).transact(xa)
 
 }

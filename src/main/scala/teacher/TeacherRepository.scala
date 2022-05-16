@@ -13,6 +13,7 @@ trait TeacherRepository {
 
   def bioUpdate(id: Long, bio: String): ConnectionIO[Int]
 
+  def updateLessonStatus(lessonId: Long, teacherId: Long): ConnectionIO[Int]
 }
 
 

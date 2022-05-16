@@ -22,9 +22,17 @@ class DBTeacherRepository extends TeacherRepository {
        """.query[TeacherDao].stream.compile.toList
 
   def bioUpdate(id: Long, bio: String): ConnectionIO[Int] = {
-    sql"""insert into teacher_extension(teacher_id, bio) values ($id, $bio)
-            on conflict (teacher_id) do update set bio = $bio
+    sql"""
+        insert into teacher_extension(teacher_id, bio) values ($id, $bio)
+        on conflict (teacher_id) do update set bio = $bio
        """.update.run
   }
+
+  def updateLessonStatus(lessonId: Long, teacherId: Long): ConnectionIO[Int] =
+    sql"""
+        update lesson
+        set is_purchased = true
+        where id = $lessonId and teacher_id = $teacherId
+       """.update.run
 
 }

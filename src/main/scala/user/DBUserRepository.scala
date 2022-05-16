@@ -1,7 +1,7 @@
 package user
 
 import data.dao.UserDao
-import data.dto.User
+import data.dto.{Lesson, User}
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 
@@ -78,4 +78,15 @@ class DBUserRepository extends UserRepository {
              reserved = reserved - $amount
          where id = $id
        """.update.run
+
+  def payment(lesson: Lesson): ConnectionIO[Int] =
+    sql"""
+         update user_table
+        set wallet = wallet + ${lesson.price}
+        where id = ${lesson.teacherId};
+        update user_table
+        set reserved = reserved - ${lesson.price}
+        where id = ${lesson.studentId}
+       """
+      .update.run
 }

@@ -85,10 +85,19 @@ object TeacherRouter {
 
       case req@POST -> Root / "withdrawal" => (for {
         session <- auth(req)
-        request <- req.decodeJson[Double]
+        request <- req.decodeJson[BigDecimal]
         id <- sessionService.checkSession(session)
         res <- teacherService.withdrawal(id, request)
       } yield res).forbidden
+
+      case req@POST -> Root / "payment" / LongVar(lessonId) =>
+        (for {
+          session <- auth(req)
+          teacherId <- sessionService.checkSession(session)
+          is <- teacherService.isTeacher(teacherId)
+          res <- if(is) teacherService.payment(lessonId, teacherId)
+          else IO.raiseError(new Exception("You are not a teacher"))
+        } yield res).forbidden
     }
   }
 }
