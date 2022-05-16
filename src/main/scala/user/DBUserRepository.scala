@@ -41,10 +41,10 @@ class DBUserRepository extends UserRepository {
   def logout(session: String): ConnectionIO[Int] =
     sql"delete from session where session = $session".update.run
 
-  override def cashIn(userId: Long, amount: BigDecimal): ConnectionIO[BigDecimal] =
+  def cashIn(userId: Long, amount: BigDecimal): ConnectionIO[BigDecimal] =
     sql"""
          update user_table
-         set wallet = (select wallet from user_table where id = $userId) + $amount
+         set wallet = wallet + $amount
          where id = $userId
        """
       .update.withUniqueGeneratedKeys("id", "wallet")
