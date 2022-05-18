@@ -2,8 +2,8 @@ package util
 
 sealed trait UserType
 
-case object Student extends UserType
+case object StudentType extends UserType
 
-case object Teacher extends UserType
+case object TeacherType extends UserType
 
-case object Moderator extends UserType
+case object ModeratorType extends UserType

@@ -1,84 +1,104 @@
 package student
 
 import cats.effect.IO
-import cats.effect.IO.asyncForIO
-import data.dto.Lesson
-import data.req.GradeReq
-import doobie.implicits._
-import doobie.util.transactor.Transactor.Aux
-import lesson.LessonRepository
+import data.dto.{Balance, Lesson}
+import data.req.{CashInReq, GradeReq, HomeworkReq}
+import org.http4s.Request
+import session.SessionRepository
+import teacher.TeacherRepository
 import user.UserRepository
+import util.ApiErrors.{AccessDeniedError, InsufficientFundsError, YouAreNotAStudentError}
+import util.Util.auth
 
+class StudentService(userRepository: UserRepository,
+                     studentRepository: StudentRepository,
+                     sessionRepository: SessionRepository,
+                     teacherRepository: TeacherRepository
+                    ) {
+  def getLessonByTeacher(teacherId: Long): IO[List[Lesson]] = studentRepository.lessonsByTeacher(teacherId)
 
-class StudentService(xa: Aux[IO, Unit])(stRep: StudentRepository, lRep: LessonRepository, uRep: UserRepository) {
+  def getLesson(lessonId: Long): IO[Lesson] = studentRepository.getLesson(lessonId)
 
-  def isStudent(studentId: Long): IO[Boolean] =
-    stRep.isStudent(studentId).transact(xa).map {
-      case Some(ut) if ut == "Student" => true
-      case _ => false
-    }
+  def getYourLesson(req: Request[IO], lessonId: Long): IO[Lesson] = for {
+    session <- auth(req)
+    studentId <- sessionRepository.getIdBySession(session)
+    isStudent <- studentRepository.isStudent(studentId)
+    res <- if (isStudent) studentRepository.yourLesson(lessonId, studentId)
+    else IO.raiseError(YouAreNotAStudentError)
+  } yield res
 
-
-  def cashIn(id: Long, amount: Double): IO[BigDecimal] = uRep.cashIn(id, amount).transact(xa)
-
-  def evaluateTeacherUpdate(req: GradeReq): IO[Int] =
-    (for {
-      grade <- stRep.teacherGrade(req.teacherId).map(_.fold((0.0, 0))(identity))
-      newGrade = (grade._1 * grade._2 + req.rate) / (grade._2 + 1)
-      res <- stRep.evaluateTeacherUpdate(req.teacherId)(newGrade, grade._2 + 1)
-    } yield res).transact(xa)
-
-
-  def next(studentId: Long): IO[Lesson] =
-    lRep.upcomingLessonsByStudent(studentId).transact(xa).map(_.headOption match {
-      case Some(ls) => ls
-      case None => throw new Exception("List of upcoming lessons is empty")
-    })
-
-  def previous(studentId: Long): IO[List[Lesson]] = lRep.previousLessonsByStudent(studentId).transact(xa)
-
-  def upcoming(studentId: Long): IO[List[Lesson]] = lRep.upcomingLessonsByStudent(studentId).transact(xa)
-
-  def signUp(lessonId: Long, studentId: Long): IO[Lesson] = (
+  def signUp(req: Request[IO], lessonId: Long): IO[Lesson] =
     for {
-      lessonOpt <- lRep.emptyLesson(lessonId)
-      lesson = lessonOpt match {
-        case Some(l) => l
-        case None => throw new Exception("You can't access this lesson")
+      session <- auth(req)
+      studentId <- sessionRepository.getIdBySession(session)
+      isStudent <- studentRepository.isStudent(studentId)
+      lesson <- if (isStudent) studentRepository.getLesson(lessonId)
+      else IO.raiseError(YouAreNotAStudentError)
+      isNotBusy <- studentRepository.isNotBusy(studentId, lesson.date)
+      balance <- userRepository.balance(studentId)
+      res <- if (balance.amount > lesson.price && isNotBusy) {
+        studentRepository.reserve(studentId, lesson.price)
+        studentRepository.signUp(lessonId, studentId)
       }
-      list <- lRep.studentLessonsByDate(studentId, lesson.date)
-      balance <- uRep.balance(studentId)
-      _ <- if (balance._1 > lesson.price) uRep.reserve(studentId, lesson.price)
-      else throw new Exception("Not enough money")
-      res <- if (list.isEmpty) lRep.signUp(lessonId, studentId)
-             else throw new Exception("You have another lesson on this time")
-    } yield res).transact(xa)
+      else IO.raiseError(InsufficientFundsError)
+    } yield res
 
 
-  def signOut(lessonId: Long, studentId: Long): IO[Int] =
-    (for {
-      lessonOpt <- lRep.studentLesson(lessonId, studentId)
-      lesson = lessonOpt match {
-        case Some(ls) => ls
-        case None => throw new Exception("Something went wrong")
+  def signOut(req: Request[IO], lessonId: Long): IO[Int] =
+    for {
+      session <- auth(req)
+      studentId <- sessionRepository.getIdBySession(session)
+      lesson <- studentRepository.studentLesson(lessonId, studentId)
+
+      res <- {
+        studentRepository.unreserve(studentId, lesson.price)
+        studentRepository.signOut(lessonId, studentId)
       }
-      _ <- uRep.unreserve(lessonId, lesson.price)
-      res <- lRep.signOut(lessonId, studentId)
-    } yield res ).transact(xa)
+    } yield res
 
-  def lessonsByTeacher(teacherId: Long): IO[List[Lesson]] =
-    lRep.lessonsByTeacher(teacherId).transact(xa)
+  def upcomingLessons(req: Request[IO]): IO[List[Lesson]] =
+    for {
+      session <- auth(req)
+      studentId <- sessionRepository.getIdBySession(session)
+      res <- studentRepository.upcoming(studentId)
+    } yield res
 
-  def lesson(lessonId: Long): IO[Lesson] = lRep.emptyLesson(lessonId).transact(xa).map {
-    case Some(ls) => ls
-    case None => throw new Exception("Something went wrong")
-  }
+  def previousLessons(req: Request[IO]): IO[List[Lesson]] =
+    for {
+      session <- auth(req)
+      studentId <- sessionRepository.getIdBySession(session)
+      res <- studentRepository.previous(studentId)
+    } yield res
 
-  def yourLesson(lessonId: Long, studentId: Long): IO[Lesson] =
-    lRep.studentLesson(lessonId, studentId).transact(xa).map {
-      case Some(ls) => ls
-      case None => throw new Exception("Something went wrong")
-    }
+  def nextLesson(req: Request[IO]): IO[Lesson] =
+    for {
+      session <- auth(req)
+      studentId <- sessionRepository.getIdBySession(session)
+      res <- studentRepository.next(studentId)
+    } yield res
+
+  def evaluateTeacher(req: Request[IO], gradeReq: GradeReq): IO[Int] = for {
+    session <- auth(req)
+    _ <- sessionRepository.getIdBySession(session)
+    isTeacher <- teacherRepository.isTeacher(gradeReq.teacherId)
+    grade <- teacherRepository.teacherGrade(gradeReq.teacherId)
+    newGrade = (grade._1 * grade._2 + gradeReq.rate) / (grade._2 + 1)
+    res <- if (isTeacher) studentRepository.evaluateTeacherUpdate(gradeReq.teacherId, newGrade, grade._2 + 1)
+    else IO.raiseError(AccessDeniedError)
+  } yield res
 
 
+  def cashIn(req: Request[IO], cashInReq: CashInReq): IO[Balance] =
+    for {
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      res <- userRepository.cashIn(id, cashInReq.amount)
+    } yield res
+
+  def sendHomework(req: Request[IO], homeworkReq: HomeworkReq): IO[Lesson] =
+    for {
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      res <- studentRepository.homework(homeworkReq.lessonId, id, homeworkReq.homework)
+    } yield res
 }

@@ -1,24 +1,25 @@
 package moderator
 
-import data.dao.UserDao
-import data.dto.Lesson
-import doobie.free.connection.ConnectionIO
+import cats.effect.IO
+import data.dto.{Lesson, User}
 
 trait ModeratorRepository {
 
-    def isMod(userId: Long): ConnectionIO[Boolean]
+    def isMod(userId: Long): IO[Boolean]
 
-    def blockUser(userId: Long): ConnectionIO[Boolean]
+    def blockUser(userId: Long): IO[Boolean]
 
-    def closeAllSessions(userId: Long): ConnectionIO[Int]
+    def closeAllSessions(userId: Long): IO[Int]
 
-    def unblockUser(userId: Long): ConnectionIO[Boolean]
+    def unblockUser(userId: Long): IO[Boolean]
 
-    def deleteUser(userId: Long): ConnectionIO[Boolean]
+    def deleteUser(userId: Long): IO[Boolean]
 
-    def deleteLesson(userId: Long): ConnectionIO[Boolean]
+    def deleteLesson(lessonId: Long): IO[Boolean]
 
-    def lessonById(lessonId: Long): ConnectionIO[Option[Lesson]]
+    def lessonById(lessonId: Long): IO[Lesson]
 
-    def userById(userId: Long): ConnectionIO[Option[UserDao]]
+    def userById(userId: Long): IO[User]
+
+
 }

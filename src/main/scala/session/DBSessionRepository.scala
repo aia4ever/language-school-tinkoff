@@ -1,9 +1,17 @@
 package session
 
-import doobie.free.connection.ConnectionIO
+import cats.effect.IO
 import doobie.implicits._
+import doobie.util.transactor.Transactor.Aux
+import util.ApiErrors.InvalidSessionError
+import util.Implicits._
+import util.dictionary.SessionDictionary
 
-class DBSessionRepository extends SessionRepository {
-  def checkSession(session: String): ConnectionIO[Option[Long]] =
-    sql"select user_id from session where session.session = $session".query[Long].option
+
+class DBSessionRepository(xa: Aux[IO, Unit]) extends SessionRepository {
+  def getIdBySession(session: String): IO[Long] = SessionDictionary.getIdBySession(session).transact(xa)
+    .map {
+    case Some(id) => id
+    case None => throw InvalidSessionError
+  }
 }

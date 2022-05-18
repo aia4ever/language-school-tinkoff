@@ -1,6 +1,5 @@
 package data.dao
 
-import data.dto
 import data.dto.User
 import util.Implicits._
 
@@ -17,6 +16,6 @@ case class UserDao(
                   ) {
 
 
-  lazy val toUser: User = dto.User(id, login, firstname, surname, password, email, phoneNumber, sex, userType)
+  lazy val toUser: User = User(id, login, firstname, surname, password, email, phoneNumber, sex, userType)
 
 }

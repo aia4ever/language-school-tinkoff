@@ -1,38 +1,62 @@
 package teacher
 
-import data.dao.TeacherDao
-import doobie.free.connection.ConnectionIO
+import cats.effect.IO
+import data.dto.{Lesson, Teacher}
 import doobie.implicits._
-import doobie.implicits.legacy.instant._
+import doobie.util.transactor.Transactor.Aux
+import util.ApiErrors._
+import util.TeacherType
+import util.dictionary.{LessonDictionary, TeacherDictionary, UserDictionary}
+
+import java.time.Instant
 
 
-class DBTeacherRepository extends TeacherRepository {
-  def getTeacher(teacherId: Long): ConnectionIO[Option[TeacherDao]] =
-    sql"""select ut.id, ut.firstname, ut.surname, ut.sex, te.bio, te.average_grade, te.grade_amount
-      from user_table ut
-          left join teacher_extension te on ut.id = te.teacher_id and ut.user_type = 'Teacher'
-      where ut.id = $teacherId
-       """.query[TeacherDao].option
+class DBTeacherRepository(xa: Aux[IO, Unit]) extends TeacherRepository {
 
-  def getAllTeachers: ConnectionIO[List[TeacherDao]] =
-    sql"""
-      select ut.id, ut.firstname, ut.surname, ut.sex, te.bio, te.average_grade, te.grade_amount
-      from user_table ut
-          left join teacher_extension te on ut.id = te.teacher_id and ut.user_type = 'Teacher'
-       """.query[TeacherDao].stream.compile.toList
+  override def deleteLesson(lessonId: Long, teacherId: Long): IO[Int] = LessonDictionary.deleteLesson(lessonId, teacherId).transact(xa)
 
-  def bioUpdate(id: Long, bio: String): ConnectionIO[Int] = {
-    sql"""
-        insert into teacher_extension(teacher_id, bio) values ($id, $bio)
-        on conflict (teacher_id) do update set bio = $bio
-       """.update.run
+  override def updateLesson(lesson: Lesson, teacherId: Long): IO[Lesson] = LessonDictionary.updateLesson(lesson, teacherId).transact(xa)
+
+  override def getLesson(lessonId: Long, teacherId: Long): IO[Lesson] = LessonDictionary.getLesson(lessonId, teacherId, TeacherType).transact(xa).map {
+    case Some(lesson) => lesson
+    case None => throw AccessDeniedError
   }
 
-  def updateLessonStatus(lessonId: Long, teacherId: Long): ConnectionIO[Int] =
-    sql"""
-        update lesson
-        set is_purchased = true
-        where id = $lessonId and teacher_id = $teacherId
-       """.update.run
+  override def isTeacher(id: Long): IO[Boolean] = TeacherDictionary.getTeacher(id).map(_.fold(false)(_ => true)).transact(xa)
 
+  override def upcomingLessons(teacherId: Long): IO[List[Lesson]] = LessonDictionary.upcomingLessons(teacherId, TeacherType).transact(xa)
+
+  override def isNotBusy(userId: Long, date: Instant): IO[Boolean] =
+    LessonDictionary.getLessonsByDate(userId, TeacherType, date).transact(xa).map(_.isEmpty)
+
+  override def newLesson(lesson: Lesson.Insert): IO[Lesson] =
+    LessonDictionary.createLesson(lesson).transact(xa)
+
+  override def bioUpdate(teacherId: Long, bio: String): IO[Int] =
+    TeacherDictionary.bioUpdate(teacherId, bio).transact(xa)
+
+
+
+  override def nextLesson(teacherId: Long): IO[Lesson] = LessonDictionary.upcomingLessons(teacherId, TeacherType).transact(xa)
+    .map(_.headOption match {
+      case Some(ls) => ls
+      case None => throw NoLessonError
+    })
+
+  override def previousLessons(teacherId: Long): IO[List[Lesson]] = LessonDictionary.previousLessons(teacherId, TeacherType).transact(xa)
+
+  override def getTeacher(teacherId: Long): IO[Teacher] = TeacherDictionary.getTeacher(teacherId).transact(xa).map {
+    case Some(teacher) => teacher.toTeacher
+    case None => throw UserNotFoundError
+  }
+
+  override def getAllTeachers: IO[List[Teacher]] = TeacherDictionary.getAllTeachers.map(_.map(_.toTeacher)).transact(xa)
+
+  override def updateLessonStatus(lessonId: Long, teacherId: Long): IO[Int] =
+    TeacherDictionary.updateLessonStatus(lessonId, teacherId).transact(xa)
+
+  override def payment(lesson: Lesson): IO[Int] = UserDictionary.payment(lesson).transact(xa)
+
+  def teacherGrade(teacherId: Long): IO[(Double, Int)] =
+    TeacherDictionary.teacherGrade(teacherId).transact(xa).map(_.fold((0.0, 0))(identity))
 }

@@ -1,9 +1,9 @@
 package session
 
-import doobie.free.connection.ConnectionIO
+import cats.effect.IO
 
 trait SessionRepository {
-  def checkSession(session: String): ConnectionIO[Option[Long]]
+  def getIdBySession(session: String): IO[Long]
 }
 
 

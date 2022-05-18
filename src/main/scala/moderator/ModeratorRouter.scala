@@ -5,69 +5,27 @@ import io.circe.generic.auto._
 import org.http4s.HttpRoutes
 import org.http4s.circe._
 import org.http4s.dsl.io._
-import session.SessionService
-import util.Util.{auth, rest}
+import util.Util.rest
 
 object ModeratorRouter {
-  def moderatorRouter(moderatorService: ModeratorService, sessionService: SessionService): HttpRoutes[IO] = {
+  def moderatorRouter(moderatorService: ModeratorService): HttpRoutes[IO] = {
     HttpRoutes.of {
       case req@POST -> Root / "block" / LongVar(userId) =>
-        (for {
-         session <- auth(req)
-         id <- sessionService.checkSession(session)
-         is <- moderatorService.isMod(id)
-         isReqMod <- moderatorService.isMod(userId)
-         res <- if (is && isReqMod) moderatorService.blockUser(userId)
-         else IO.raiseError(new Exception("Something went wrong"))
-        } yield res).forbidden
+        moderatorService.blockUser(req, userId).forbidden
 
-      case req@POST -> Root / "unblock" / LongVar(userId) =>
-        (for {
-          session <- auth(req)
-          id <- sessionService.checkSession(session)
-          is <- moderatorService.isMod(id)
-          res <- if (is) moderatorService.unblockUser(userId)
-          else IO.raiseError(new Exception("Something went wrong"))
-        } yield res).forbidden
+      case req@POST -> Root / "unblock" / LongVar(userId) => moderatorService.unblock(req,userId)
+        .forbidden
 
-      case req@DELETE -> Root / "delete" / "user" / LongVar(userId) =>
-        (for {
-          session <- auth(req)
-          id <- sessionService.checkSession(session)
-          is <- moderatorService.isMod(id)
-          isReqMod <- moderatorService.isMod(userId)
-          res <- if (is && isReqMod) moderatorService.deleteUser(userId)
-          else IO.raiseError(new Exception("Something went wrong"))
-        } yield res
-        ).forbidden
+      case req@DELETE -> Root / "delete" / "user" / LongVar(userId) => moderatorService.deleteUser(req, userId)
+        .forbidden
 
-      case req@DELETE -> Root / "delete" / "lesson" / LongVar(lessonId) =>
-        (for {
-          session <- auth(req)
-          id <- sessionService.checkSession(session)
-          is <- moderatorService.isMod(id)
-          res <- if (is) moderatorService.deleteUser(lessonId)
-          else IO.raiseError(new Exception("Something went wrong"))
-        } yield res
-          ).forbidden
+      case req@DELETE -> Root / "delete" / "lesson" / LongVar(lessonId) => moderatorService.deleteLesson(req, lessonId)
+        .forbidden
 
-      case req@GET -> Root / "lesson" / LongVar(lessonId) =>
-        ( for {
-          session <- auth(req)
-          id <- sessionService.checkSession(session)
-          is <- moderatorService.isMod(id)
-          res <- if (is) moderatorService.lessonById(lessonId)
-          else IO.raiseError(new Exception("Something went wrong"))
-        } yield res ).forbidden
+      case req@GET -> Root / "lesson" / LongVar(lessonId) => moderatorService.getLesson(req, lessonId).forbidden
 
-      case req@GET -> Root / "lesson" / LongVar(userId) =>
-        ( for {
-          session <- auth(req)
-          id <- sessionService.checkSession(session)
-          is <- moderatorService.isMod(id)
-          res <- if (is) moderatorService.userById(userId)
-          else IO.raiseError(new Exception("Something went wrong"))
-        } yield res ).forbidden
+      case req@GET -> Root / "user" / LongVar(userId) => moderatorService.getUser(req, userId)
+      .forbidden
     }
   }
 }

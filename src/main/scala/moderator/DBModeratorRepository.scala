@@ -1,60 +1,38 @@
 package moderator
-import data.dao.UserDao
-import data.dto.Lesson
-import doobie.free.connection.ConnectionIO
+
+import cats.effect.IO
+import data.dto.{Lesson, User}
 import doobie.implicits._
-import doobie.implicits.legacy.instant._
+import doobie.util.transactor.Transactor.Aux
+import util.ApiErrors.{LessonNotFoundError, UserNotFoundError}
+import util.dictionary.ModeratorDictionary
 
-class DBModeratorRepository extends ModeratorRepository {
+class DBModeratorRepository(xa: Aux[IO, Unit]) extends ModeratorRepository {
 
-  def blockUser(userId: Long): ConnectionIO[Boolean] =
-    sql"""
-        update user_table
-        set is_blocked = true
-        where id = $userId
-       """
-      .update.run.map(_ != 0)
+  def isMod(userId: Long): IO[Boolean] = ModeratorDictionary.userById(userId).transact(xa).map {
+    case Some(user) => user.userType == "ModeratorType"
+    case None => throw UserNotFoundError
+  }
 
+  def blockUser(userId: Long): IO[Boolean] = ModeratorDictionary.closeAllSessions(userId)
+    .flatMap(_ => ModeratorDictionary.blockUser(userId)).transact(xa)
 
-  def unblockUser(userId: Long): ConnectionIO[Boolean] =
-    sql"""
-         update user_table
-        set is_blocked = false
-        where id = $userId
-       """
-      .update.run.map(_ != 0)
+  def closeAllSessions(userId: Long): IO[Int] = ModeratorDictionary.closeAllSessions(userId).transact(xa)
 
-  def deleteUser(userId: Long): ConnectionIO[Boolean] =
-    sql"""
-         delete from user_table
-        where id = $userId
-       """
-      .update.run.map(_!=0)
+  def unblockUser(userId: Long): IO[Boolean] = ModeratorDictionary.unblockUser(userId).transact(xa)
 
-  def deleteLesson(lessonId: Long): ConnectionIO[Boolean] =
-    sql"""
-         delete from lesson
-        where id = $lessonId
-       """
-      .update.run.map(_!=0)
+  def deleteUser(userId: Long): IO[Boolean] = ModeratorDictionary.deleteUser(userId).transact(xa)
 
-  def lessonById(lessonId: Long): ConnectionIO[Option[Lesson]] =
-    sql"""
-        select id, teacher_id, lesson_date, price, zoom_link, student_id, homework, answer, mark, status from lesson
-        where id = $lessonId
-       """
-      .query[Lesson].option
+  def deleteLesson(lessonId: Long): IO[Boolean] = ModeratorDictionary.deleteLesson(lessonId).transact(xa)
 
-  def userById(userId: Long): ConnectionIO[Option[UserDao]] =
-    sql"""
-         select id, login, firstname, surname, password, email, phone_number, sex, user_type  from user_table
-        where id = $userId
-        """
-      .query[UserDao].option
+  def lessonById(lessonId: Long): IO[Lesson] = ModeratorDictionary.lessonById(lessonId).map {
+    case Some(ls) => ls
+    case None => throw LessonNotFoundError
+  } .transact(xa)
 
-  def isMod(userId: Long): ConnectionIO[Boolean] =
-    sql"select user_type from user_table where id = $userId".query[String].unique.map(_ == "Moderator")
+  def userById(userId: Long): IO[User] = ModeratorDictionary.userById(userId).map {
+    case Some(ls) => ls.toUser
+    case None => throw UserNotFoundError
+  } .transact(xa)
 
-  def closeAllSessions(userId: Long): ConnectionIO[Int] =
-    sql"delete from session where id = $userId".update.run
 }

@@ -1,88 +1,107 @@
 package teacher
 
 import cats.effect.IO
-import data.dto.{Lesson, Teacher}
-import doobie.util.transactor.Transactor.Aux
-import lesson.LessonRepository
-import doobie.implicits._
+import data.dto.{Balance, Lesson, Teacher}
+import data.req.{BioReq, WithdrawalReq}
+import org.http4s.Request
+import session.SessionRepository
 import user.UserRepository
+import util.ApiErrors._
+import util.Util.auth
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-
-class TeacherService(xa: Aux[IO, Unit])(tRep: TeacherRepository, lRep: LessonRepository, uRep: UserRepository) {
-
-  def deleteLesson(lessonId: Long, teacherId: Long): IO[Int] = lRep.deleteLesson(lessonId, teacherId).transact(xa)
-
-  def updateLesson(lesson: Lesson, teacherId: Long): IO[Lesson] = lRep.updateLesson(lesson, teacherId).transact(xa)
-
-  def getLesson(lessonId: Long, teacherId: Long): IO[Lesson] = lRep.teacherLesson(lessonId, teacherId).transact(xa).map {
-    case Some(lesson) => lesson
-    case None => throw new Exception("You can only access your lessons")
-  }
-
-  def isTeacher(id: Long): IO[Boolean] = tRep.getTeacher(id).map(_.fold(false)(_ => true)).transact(xa)
-
-  def upcomingLessons(teacherId: Long): IO[List[Lesson]] = lRep.upcomingLessonsByTeacher(teacherId).transact(xa)
-
-  def newLesson(lesson: Lesson.Insert, teacherId: Long): IO[Lesson] =
-    (
-      if (teacherId == lesson.teacherId) for {
-        list <- lRep.teacherLessonsByDate(teacherId, lesson.date)
-        res <- if (list.isEmpty) lRep.createLesson(lesson)
-        else throw new Exception("You have another lesson on this time")
-      } yield res
-      else throw new Exception("Only you can be the teacher in your lessons")).transact(xa)
-
-
-
-  def insertOrUpdateBio(teacherId: Long, bio: String): IO[Teacher] =
+class TeacherService(
+                      teacherRepository: TeacherRepository,
+                      userRepository: UserRepository,
+                      sessionRepository: SessionRepository
+                    ) {
+  def createLesson(req: Request[IO], insertReq: Lesson.Insert): IO[Lesson] =
     (for {
-      update <- tRep.bioUpdate(teacherId, bio)
-      res <- update match {
-        case 1 => tRep.getTeacher(teacherId)
-        case _ => throw new Exception("Something went wrong")
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      isTeacher <- teacherRepository.isTeacher(id)
+      isNotBusy <- if (isTeacher) teacherRepository.isNotBusy(id, insertReq.date)
+      else IO.raiseError(YouAreNotATeachError)
+      res <- if (isNotBusy) teacherRepository.newLesson(insertReq)
+      else IO.raiseError(BusyError)
+    } yield res)
+
+  def bioUpdate(req: Request[IO], bioReq: BioReq): IO[Teacher] =
+    for {
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      isTeacher <- teacherRepository.isTeacher(id)
+      res <- if (isTeacher) {
+        teacherRepository.bioUpdate(id, bioReq.bio)
+        teacherRepository.getTeacher(id)
       }
-    } yield res.get.toTeacher).transact(xa)
+      else IO.raiseError(YouAreNotATeachError)
+    } yield res
 
+  def allTeachers: IO[List[Teacher]] = teacherRepository.getAllTeachers
 
-  def nextLesson(teacherId: Long): IO[Lesson] = lRep.upcomingLessonsByTeacher(teacherId).transact(xa)
-    .map(_.headOption match {
-      case Some(ls) => ls
-      case None => throw new Exception("You don't have next lesson")
-    })
+  def findTeacher(teacherId: Long): IO[Teacher] = teacherRepository.getTeacher(teacherId)
 
-  def previousLessons(teacherId: Long): IO[List[Lesson]] = lRep.previousLessonsByTeacher(teacherId).transact(xa)
+  def upcoming(req: Request[IO]): IO[List[Lesson]] = for {
+    session <- auth(req)
+    id <- sessionRepository.getIdBySession(session)
+    res <- teacherRepository.upcomingLessons(id)
+  } yield res
 
-  def withdrawal(teacherId: Long, amount: BigDecimal): IO[BigDecimal] =
-    (for {
-      balance <- uRep.balance(teacherId)
-      res <-  if (balance._1 >= amount) uRep.withdrawal(teacherId, amount)
-      else throw new Exception("Not enough money")
-    } yield res).transact(xa)
+  def next(req: Request[IO]): IO[Lesson] = for {
+    session <- auth(req)
+    id <- sessionRepository.getIdBySession(session)
+    res <- teacherRepository.nextLesson(id)
+  } yield res
 
-  def findTeacher(teacherId: Long): IO[Teacher] = tRep.getTeacher(teacherId).transact(xa).map {
-    case Some(teacher) => teacher.toTeacher
-    case None => throw new Exception(s"Teacher with id:$teacherId not found")
-  }
+  def previous(req: Request[IO]): IO[List[Lesson]] = for {
+    session <- auth(req)
+    id <- sessionRepository.getIdBySession(session)
+    res <- teacherRepository.previousLessons(id)
+  } yield res
 
-  def allTeachers(): IO[List[Teacher]] = tRep.getAllTeachers.map(_.map(_.toTeacher)).transact(xa)
+  def getYourLesson(req: Request[IO], lessonId: Long): IO[Lesson] = for {
+    session <- auth(req)
+    teacherId <- sessionRepository.getIdBySession(session)
+    res <- teacherRepository.getLesson(lessonId, teacherId)
+  } yield res
 
-  def payment(lessonId: Long, teacherId: Long): IO[Int] =
-    (for {
-      lessonOpt <- lRep.teacherLesson(lessonId, teacherId)
-      lesson = lessonOpt match {
-        case Some(ls) => ls
-        case None => throw new Exception("There is no lesson with this ID")
-      }
-      isPurchased = lesson.purchased
+  def updateLesson(req: Request[IO], lesson: Lesson): IO[Lesson] =
+    for {
+      session <- auth(req)
+      teacherId <- sessionRepository.getIdBySession(session)
+      res <- teacherRepository.updateLesson(lesson, teacherId)
+    } yield res
+
+  def delete(req: Request[IO], lessonId: Long): IO[Int] = for {
+    session <- auth(req)
+    teacherId <- sessionRepository.getIdBySession(session)
+    res <- teacherRepository.deleteLesson(lessonId, teacherId)
+  } yield res
+
+  def withdrawal(req: Request[IO], withdrawalReq: WithdrawalReq): IO[Balance] = for {
+    session <- auth(req)
+    teacherId <- sessionRepository.getIdBySession(session)
+    balance <- userRepository.balance(teacherId)
+    res <- if (balance.amount >= withdrawalReq.amount) userRepository.withdrawal(teacherId, withdrawalReq.amount)
+    else IO.raiseError(InsufficientFundsError)
+  } yield res
+
+  def payment(req: Request[IO], lessonId: Long): IO[Int] =
+    for {
+      session <- auth(req)
+      teacherId <- sessionRepository.getIdBySession(session)
+      isTeacher <- teacherRepository.isTeacher(teacherId)
+      lesson <- if (isTeacher) teacherRepository.getLesson(lessonId, teacherId)
+      else IO.raiseError(YouAreNotATeachError)
       studentId = lesson.studentId.fold(0L)(identity)
-      date = lesson.date
-     res <- if (studentId != 0 && !isPurchased && date.plus(1,ChronoUnit.HOURS).isBefore(Instant.now())) {
-       tRep.updateLessonStatus(lessonId, teacherId)
-       uRep.payment(lesson)
-     } else throw new Exception("Payment can't be made")
-    } yield res).transact(xa)
+      isPurchased = lesson.purchased
+      res <- if (studentId != 0 && !isPurchased && lesson.date.plus(1, ChronoUnit.HOURS).isBefore(Instant.now())) {
+        teacherRepository.updateLessonStatus(lessonId, teacherId)
+        teacherRepository.payment(lesson)
+      } else IO.raiseError(AccessDeniedError)
+    } yield res
 
 }

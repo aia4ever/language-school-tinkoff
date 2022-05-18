@@ -2,31 +2,65 @@ package moderator
 
 import cats.effect.IO
 import data.dto.{Lesson, User}
-import doobie.implicits._
-import doobie.util.transactor.Transactor.Aux
+import org.http4s.Request
+import session.SessionRepository
+import util.ApiErrors.AccessDeniedError
+import util.Util.auth
 
-class ModeratorService(xa: Aux[IO, Unit])(mRep: ModeratorRepository) {
+class ModeratorService(moderatorRepository: ModeratorRepository, sessionRepository: SessionRepository) {
 
-  def isMod(userId: Long): IO[Boolean] = mRep.isMod(userId).transact(xa)
+  def blockUser(req: Request[IO], userId: Long): IO[Boolean] =
+    for {
+    session <- auth(req)
+    id <- sessionRepository.getIdBySession(session)
+    isModerator <- moderatorRepository.isMod(id)
+    isReqMod <- moderatorRepository.isMod(userId)
+    res <- if (isModerator && !isReqMod) moderatorRepository.blockUser(userId)
+    else IO.raiseError(AccessDeniedError)
+  } yield res
 
-  def blockUser(userId: Long): IO[Boolean] = mRep.closeAllSessions(userId).flatMap(_ => mRep.blockUser(userId)).transact(xa)
+  def unblock(req: Request[IO], userId: Long): IO[Boolean] =
+    for {
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      isModerator <- moderatorRepository.isMod(id)
+      res <- if (isModerator) moderatorRepository.unblockUser(userId)
+      else IO.raiseError(AccessDeniedError)
+    } yield res
 
-  def closeAllSessions(userId: Long): IO[Int] = mRep.closeAllSessions(userId).transact(xa)
+  def deleteUser(req: Request[IO], userId: Long): IO[Boolean] =
+    for {
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      isModerator <- moderatorRepository.isMod(id)
+      isReqMod <- moderatorRepository.isMod(userId)
+      res <- if (isModerator && !isReqMod) moderatorRepository.deleteUser(userId)
+      else IO.raiseError(AccessDeniedError)
+    } yield res
 
-  def unblockUser(userId: Long): IO[Boolean] = mRep.unblockUser(userId).transact(xa)
+  def deleteLesson(req: Request[IO], lessonId: Long): IO[Boolean] =
+    for {
+      session <- auth(req)
+      id <- sessionRepository.getIdBySession(session)
+      isModerator <- moderatorRepository.isMod(id)
+      res <- if (isModerator) moderatorRepository.deleteLesson(lessonId)
+      else IO.raiseError(AccessDeniedError)
+    } yield res
 
-  def deleteUser(userId: Long): IO[Boolean] = mRep.deleteUser(userId).transact(xa)
+  def getUser(req: Request[IO], userId: Long): IO[User] = for {
+    session <- auth(req)
+    id <- sessionRepository.getIdBySession(session)
+    isModerator <- moderatorRepository.isMod(id)
+    res <- if (isModerator) moderatorRepository.userById(userId)
+    else IO.raiseError(AccessDeniedError)
+  } yield res
 
-  def deleteLesson(userId: Long): IO[Boolean] = mRep.deleteLesson(userId).transact(xa)
-
-  def lessonById(lessonId: Long): IO[Lesson] = mRep.lessonById(lessonId).map {
-    case Some(ls) => ls
-    case None =>throw new Exception("No lesson with this id")
-  } .transact(xa)
-
-  def userById(userId: Long): IO[User] = mRep.userById(userId).map {
-    case Some(ls) => ls.toUser
-    case None => throw new Exception("No user with this id")
-  } .transact(xa)
+  def getLesson(req: Request[IO], lessonId: Long): IO[Lesson] = for {
+    session <- auth(req)
+    id <- sessionRepository.getIdBySession(session)
+    isModerator <- moderatorRepository.isMod(id)
+    res <- if (isModerator) moderatorRepository.lessonById(lessonId)
+    else IO.raiseError(AccessDeniedError)
+  } yield res
 
 }

@@ -3,9 +3,9 @@ package util
 object Implicits {
   implicit def stringToUserType(string: String): UserType =
     string match {
-      case "Student" => Student
-      case "Teacher" => Teacher
-      case "Moderator" => Moderator
+      case "StudentType" => StudentType
+      case "TeacherType" => TeacherType
+      case "ModeratorType" => ModeratorType
     }
 
   implicit def stringToSex(string: String): Sex = {

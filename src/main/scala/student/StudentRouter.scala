@@ -2,16 +2,13 @@ package student
 
 import cats.effect.IO
 import data.dto.{Lesson, Student, Teacher}
-import data.req.GradeReq
+import data.req.{CashInReq, GradeReq, HomeworkReq}
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{EntityEncoder, HttpRoutes}
-import session.SessionService
-import teacher.TeacherService
-import util.Implicits._
-import util.Util.{auth, rest}
+import util.Util.rest
 
 object StudentRouter {
   implicit val studentEncoder: EntityEncoder[IO, Student] = jsonEncoderOf[IO, Student]
@@ -20,64 +17,41 @@ object StudentRouter {
   implicit val rateReq: EntityEncoder[IO, GradeReq] = jsonEncoderOf[IO, GradeReq]
 
 
-  def studentRouter(studentService: StudentService, sessionService: SessionService, teacherService: TeacherService): HttpRoutes[IO] = {
+  def studentRouter(studentService: StudentService): HttpRoutes[IO] = {
     HttpRoutes.of {
 
-      case GET -> Root / "lessons" / LongVar(teacher) => studentService.lessonsByTeacher(teacher)
+      case GET -> Root / "lessons" / LongVar(teacherId) => studentService.getLessonByTeacher(teacherId)
         .flatMap(res => Ok(res.asJson))
 
-      case GET -> Root / "lesson" / LongVar(id) => studentService.lesson(id)
+      case GET -> Root / "lesson" / LongVar(lessonId) => studentService.getLesson(lessonId)
         .forbidden
 
-      case req@GET -> Root / "your-lesson" / LongVar(id) =>
-        (for {
-          session <- auth(req)
-          _id <- sessionService.checkSession(session)
-          is <- studentService.isStudent(_id)
-          res <- if (is) studentService.yourLesson(id, _id)
-          else IO.raiseError(new Exception("You are not a Student"))
-        } yield res).forbidden
+      case req@GET -> Root / "your-lesson" / LongVar(lessonId) => studentService.getYourLesson(req, lessonId)
+        .forbidden
 
+      case req@POST -> Root / "lesson" / "homework" => req.decodeJson[HomeworkReq]
+        .flatMap( studentService.sendHomework(req, _)).forbidden
 
-      case req@POST -> Root / "lesson" / LongVar(id) / "sign-up"  =>
-        (for {
-          session <- auth(req)
-          studentId <- sessionService.checkSession(session)
-          is <- studentService.isStudent(studentId)
-          res <- if (is) studentService.signUp(id, studentId)
-          else IO.raiseError(new Exception("You are not a Student"))
-        } yield res).forbidden
+      case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-up" => studentService.signUp(req, lessonId)
+        .forbidden
 
+      case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-out" => studentService.signOut(req, lessonId)
+        .flatMap(res => Ok(res.asJson))
 
-      case req@POST -> Root / "lesson" / LongVar(id) / "sign-out"  => auth(req).flatMap(sessionService.checkSession)
-        .flatMap(studentService.signOut(id, _)).flatMap(res => Ok(res.asJson))
+      case req@GET -> Root / "upcoming-lessons" => studentService.upcomingLessons(req)
+        .flatMap(res => Ok(res.asJson))
 
-      case req@GET -> Root / "upcoming-lessons" =>  auth(req).flatMap(sessionService.checkSession)
-        .flatMap(studentService.upcoming).flatMap(res => Ok(res.asJson))
+      case req@GET -> Root / "previous-lessons" => studentService.previousLessons(req)
+        .flatMap(res => Ok(res.asJson))
 
-      case req@GET -> Root / "previous-lessons"  => auth(req).flatMap(sessionService.checkSession)
-        .flatMap(studentService.previous).flatMap(res => Ok(res.asJson))
+      case req@GET -> Root / "next" => studentService.nextLesson(req)
+        .flatMap(res => Ok(res.asJson))
 
-      case req@GET -> Root / "next" => auth(req).flatMap(sessionService.checkSession)
-        .flatMap(studentService.next).forbidden
+      case req@POST -> Root / "evaluate-teacher" => req.decodeJson[GradeReq].flatMap(studentService.evaluateTeacher(req, _))
+        .forbidden
 
-      case req@POST -> Root / "evaluate-teacher"  =>
-        (for {
-          session <- auth(req)
-          request <- req.decodeJson[GradeReq]
-          _ <- sessionService.checkSession(session)
-          is <- teacherService.isTeacher(request.teacherId)
-          res <- if (is) studentService.evaluateTeacherUpdate(request)
-          else IO.raiseError(new Exception("You are trying evaluate not the teacher"))
-        } yield res).forbidden
-
-      case req@POST -> Root / "cash-in" =>
-        (for {
-          session <- auth(req)
-          id <- sessionService.checkSession(session)
-          amount <- req.decodeJson[Double]
-          res <- studentService.cashIn(id, amount)
-        } yield res).forbidden
+      case req@POST -> Root / "cash-in" => req.decodeJson[CashInReq].flatMap(studentService.cashIn(req, _))
+        .forbidden
 
     }
   }

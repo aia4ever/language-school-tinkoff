@@ -1,37 +1,27 @@
 package user
 
-import data.dao.UserDao
-import data.dto.{Lesson, User}
-import doobie.free.connection.ConnectionIO
+import cats.effect.IO
+import data.dto.{Balance, User}
+import data.req.LoginReq
 import doobie.implicits._
 
 
-trait UserRepository {
+trait UserRepository  {
+  def createUser(insert: User.Insert): IO[User]
 
-  def deleteAcc(id: Long): ConnectionIO[Int]
+  def getUserById(id: Long):  IO[User]
 
-  def create(insert: User.Insert): ConnectionIO[UserDao]
+  def deleteById(id: Long): IO[Int]
 
-  def findById(id: Long): ConnectionIO[Option[UserDao]]
+  def logout(session: String): IO[Unit]
 
-  def findByLoginNonBlocked(login: String): ConnectionIO[Option[UserDao]]
+  def findByLoginNonBlocked(req: LoginReq): IO[User]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def login(user: User): IO[String]
 
-  def createSession(id: Long, session: String): ConnectionIO[String]
+  def cashIn(id: Long, amount: BigDecimal): IO[Balance]
 
-  def logout(session: String): ConnectionIO[Int]
+  def balance(id: Long): IO[Balance]
 
-  def cashIn(id: Long, amount: BigDecimal): ConnectionIO[BigDecimal]
-
-  def balance(id: Long): ConnectionIO[(BigDecimal, BigDecimal)]
-
-  def withdrawal(userId: Long, amount: BigDecimal): ConnectionIO[BigDecimal]
-
-  def reserve(id: Long, amount: BigDecimal) : ConnectionIO[Int]
-
-  def unreserve(id: Long, amount: BigDecimal) : ConnectionIO[Int]
-
-  def payment(lesson: Lesson): ConnectionIO[Int]
-
+  def withdrawal(userId: Long, amount: BigDecimal): IO[Balance]
 }
