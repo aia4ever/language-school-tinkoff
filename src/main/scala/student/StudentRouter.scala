@@ -8,7 +8,7 @@ import io.circe.syntax._
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{EntityEncoder, HttpRoutes}
-import util.Util.rest
+import util.Util.{auth, rest}
 
 object StudentRouter {
   implicit val studentEncoder: EntityEncoder[IO, Student] = jsonEncoderOf[IO, Student]
@@ -26,31 +26,36 @@ object StudentRouter {
       case GET -> Root / "lesson" / LongVar(lessonId) => studentService.getLesson(lessonId)
         .forbidden
 
-      case req@GET -> Root / "your-lesson" / LongVar(lessonId) => studentService.getYourLesson(req, lessonId)
+      case req@GET -> Root / "your-lesson" / LongVar(lessonId) => auth(req).flatMap( studentService.getYourLesson(_, lessonId))
         .forbidden
 
       case req@POST -> Root / "lesson" / "homework" => req.decodeJson[HomeworkReq]
-        .flatMap( studentService.sendHomework(req, _)).forbidden
+        .flatMap( request => auth(req).flatMap(studentService.sendHomework(_, request))).forbidden
 
-      case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-up" => studentService.signUp(req, lessonId)
+      case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-up" =>
+        auth(req).flatMap(studentService.signUp(_, lessonId))
         .forbidden
 
-      case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-out" => studentService.signOut(req, lessonId)
+      case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-out" =>
+        auth(req).flatMap( studentService.signOut(_, lessonId))
         .flatMap(res => Ok(res.asJson))
 
-      case req@GET -> Root / "upcoming-lessons" => studentService.upcomingLessons(req)
+      case req@GET -> Root / "upcoming-lessons" =>
+        auth(req).flatMap(studentService.upcomingLessons)
         .flatMap(res => Ok(res.asJson))
 
-      case req@GET -> Root / "previous-lessons" => studentService.previousLessons(req)
+      case req@GET -> Root / "previous-lessons" => auth(req).flatMap(studentService.previousLessons)
         .flatMap(res => Ok(res.asJson))
 
-      case req@GET -> Root / "next" => studentService.nextLesson(req)
+      case req@GET -> Root / "next" => auth(req).flatMap(studentService.nextLesson)
         .flatMap(res => Ok(res.asJson))
 
-      case req@POST -> Root / "evaluate-teacher" => req.decodeJson[GradeReq].flatMap(studentService.evaluateTeacher(req, _))
+      case req@POST -> Root / "evaluate-teacher" => req.decodeJson[GradeReq]
+        .flatMap(request => auth(req).flatMap(studentService.evaluateTeacher(_, request)))
         .forbidden
 
-      case req@POST -> Root / "cash-in" => req.decodeJson[CashInReq].flatMap(studentService.cashIn(req, _))
+      case req@POST -> Root / "cash-in" => req.decodeJson[CashInReq]
+        .flatMap(request => auth(req).flatMap(studentService.cashIn(_, request)))
         .forbidden
 
     }

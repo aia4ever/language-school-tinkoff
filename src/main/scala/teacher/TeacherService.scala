@@ -3,11 +3,9 @@ package teacher
 import cats.effect.IO
 import data.dto.{Balance, Lesson, Teacher}
 import data.req.{BioReq, WithdrawalReq}
-import org.http4s.Request
 import session.SessionRepository
 import user.UserRepository
 import util.ApiErrors._
-import util.Util.auth
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -17,20 +15,18 @@ class TeacherService(
                       userRepository: UserRepository,
                       sessionRepository: SessionRepository
                     ) {
-  def createLesson(req: Request[IO], insertReq: Lesson.Insert): IO[Lesson] =
-    (for {
-      session <- auth(req)
+  def createLesson(session: String, insertReq: Lesson.Insert): IO[Lesson] =
+    for {
       id <- sessionRepository.getIdBySession(session)
       isTeacher <- teacherRepository.isTeacher(id)
       isNotBusy <- if (isTeacher) teacherRepository.isNotBusy(id, insertReq.date)
       else IO.raiseError(YouAreNotATeachError)
       res <- if (isNotBusy) teacherRepository.newLesson(insertReq)
       else IO.raiseError(BusyError)
-    } yield res)
+    } yield res
 
-  def bioUpdate(req: Request[IO], bioReq: BioReq): IO[Teacher] =
+  def bioUpdate(session: String, bioReq: BioReq): IO[Teacher] =
     for {
-      session <- auth(req)
       id <- sessionRepository.getIdBySession(session)
       isTeacher <- teacherRepository.isTeacher(id)
       res <- if (isTeacher) {
@@ -44,54 +40,46 @@ class TeacherService(
 
   def findTeacher(teacherId: Long): IO[Teacher] = teacherRepository.getTeacher(teacherId)
 
-  def upcoming(req: Request[IO]): IO[List[Lesson]] = for {
-    session <- auth(req)
+  def upcoming(session: String): IO[List[Lesson]] = for {
     id <- sessionRepository.getIdBySession(session)
     res <- teacherRepository.upcomingLessons(id)
   } yield res
 
-  def next(req: Request[IO]): IO[Lesson] = for {
-    session <- auth(req)
+  def next(session: String): IO[Lesson] = for {
     id <- sessionRepository.getIdBySession(session)
     res <- teacherRepository.nextLesson(id)
   } yield res
 
-  def previous(req: Request[IO]): IO[List[Lesson]] = for {
-    session <- auth(req)
+  def previous(session: String): IO[List[Lesson]] = for {
     id <- sessionRepository.getIdBySession(session)
     res <- teacherRepository.previousLessons(id)
   } yield res
 
-  def getYourLesson(req: Request[IO], lessonId: Long): IO[Lesson] = for {
-    session <- auth(req)
+  def getYourLesson(session: String, lessonId: Long): IO[Lesson] = for {
     teacherId <- sessionRepository.getIdBySession(session)
     res <- teacherRepository.getLesson(lessonId, teacherId)
   } yield res
 
-  def updateLesson(req: Request[IO], lesson: Lesson): IO[Lesson] =
+  def updateLesson(session: String, lesson: Lesson): IO[Lesson] =
     for {
-      session <- auth(req)
       teacherId <- sessionRepository.getIdBySession(session)
       res <- teacherRepository.updateLesson(lesson, teacherId)
     } yield res
 
-  def delete(req: Request[IO], lessonId: Long): IO[Int] = for {
-    session <- auth(req)
+  def delete(session: String, lessonId: Long): IO[Int] = for {
     teacherId <- sessionRepository.getIdBySession(session)
     res <- teacherRepository.deleteLesson(lessonId, teacherId)
   } yield res
 
-  def withdrawal(req: Request[IO], withdrawalReq: WithdrawalReq): IO[Balance] = for {
-    session <- auth(req)
+  def withdrawal(session: String, withdrawalReq: WithdrawalReq): IO[Balance] = for {
     teacherId <- sessionRepository.getIdBySession(session)
     balance <- userRepository.balance(teacherId)
     res <- if (balance.amount >= withdrawalReq.amount) userRepository.withdrawal(teacherId, withdrawalReq.amount)
     else IO.raiseError(InsufficientFundsError)
   } yield res
 
-  def payment(req: Request[IO], lessonId: Long): IO[Int] =
+  def payment(session: String, lessonId: Long): IO[Int] =
     for {
-      session <- auth(req)
       teacherId <- sessionRepository.getIdBySession(session)
       isTeacher <- teacherRepository.isTeacher(teacherId)
       lesson <- if (isTeacher) teacherRepository.getLesson(lessonId, teacherId)

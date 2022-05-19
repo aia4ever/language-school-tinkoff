@@ -8,7 +8,7 @@ import io.circe.syntax.EncoderOps
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{EntityEncoder, HttpRoutes}
-import util.Util.rest
+import util.Util.{auth, rest}
 
 
 object UserRouter {
@@ -25,13 +25,13 @@ object UserRouter {
       case req@POST -> Root / "login" => req.decodeJson[LoginReq].flatMap(userService.login)
         .forbidden
 
-      case req@GET -> Root / "logout"  => userService.logout(req).forbidden
+      case req@GET -> Root / "logout"  => auth(req).flatMap(userService.logout).forbidden
 
-      case req@DELETE -> Root /  "delete" / LongVar(id)  => userService.delete(req, id)
+      case req@DELETE -> Root /  "delete" / LongVar(id)  => auth(req).flatMap(userService.delete(_, id))
         .flatMap(_ => Ok(s"User with id:$id deleted"))
         .handleErrorWith(err => Forbidden(err.getMessage.asJson))
 
-      case req@GET -> Root / "profile" => userService.getUser(req)
+      case req@GET -> Root / "profile" => auth(req).flatMap( userService.getUser)
         .forbidden
     }
   }

@@ -45,7 +45,11 @@ libraryDependencies ++= Seq(
 
   "org.typelevel" %% "cats-effect" % "3.3.5",
 
-  "org.scalatest" %% "scalatest" % "3.2.11" % "test"
+  "org.scalatest" %% "scalatest" % "3.2.11" % "test",
+
+  "org.mockito" % "mockito-core" % "3.12.4" % "test",
+
+  "org.mockito" %% "mockito-scala-scalatest" % "1.17.5"
 ) ++ doobie ++ http4s
 
 enablePlugins(FlywayPlugin)

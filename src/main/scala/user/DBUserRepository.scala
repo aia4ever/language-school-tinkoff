@@ -35,10 +35,8 @@ class DBUserRepository(xa: Aux[IO, Unit]) extends UserRepository {
     UserDictionary.createSession(user.id, UUID.randomUUID().toString).transact(xa)
 
 
-  override def logout(session: String): IO[Unit] = UserDictionary.logout(session).transact(xa).map {
-    case 1 => ()
-    case 0 => throw InvalidSessionError
-  }
+  override def logout(session: String): IO[Unit] = UserDictionary.logout(session).transact(xa).map(_ => ())
+
 
   override def cashIn(id: Long, amount: BigDecimal): IO[Balance] = UserDictionary.cashIn(id, amount).transact(xa)
 
