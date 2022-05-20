@@ -7,11 +7,11 @@ import doobie.implicits.legacy.instant._
 
 object StudentDictionary {
 
-  def studentUserType(studentId: Long): ConnectionIO[Option[String]] =
+  def studentUserType(studentId: Long): ConnectionIO[String] =
     sql"""
          select user_type from user_table
             where id = $studentId
-       """.query[String].option
+       """.query[String].unique
 
 
 

@@ -8,36 +8,36 @@ import doobie.implicits.legacy.instant._
 
 object ModeratorDictionary {
 
-  def blockUser(userId: Long): ConnectionIO[Boolean] =
+  def blockUser(userId: Long): ConnectionIO[Int] =
     sql"""
         update user_table
         set is_blocked = true
         where id = $userId
        """
-      .update.run.map(_ != 0)
+      .update.run
 
 
-  def unblockUser(userId: Long): ConnectionIO[Boolean] =
+  def unblockUser(userId: Long): ConnectionIO[Int] =
     sql"""
          update user_table
         set is_blocked = false
         where id = $userId
        """
-      .update.run.map(_ != 0)
+      .update.run
 
-  def deleteUser(userId: Long): ConnectionIO[Boolean] =
+  def deleteUser(userId: Long): ConnectionIO[Int] =
     sql"""
          delete from user_table
         where id = $userId
        """
-      .update.run.map(_ != 0)
+      .update.run
 
-  def deleteLesson(lessonId: Long): ConnectionIO[Boolean] =
+  def deleteLesson(lessonId: Long): ConnectionIO[Int] =
     sql"""
          delete from lesson
         where id = $lessonId
        """
-      .update.run.map(_ != 0)
+      .update.run
 
   def lessonById(lessonId: Long): ConnectionIO[Option[Lesson]] =
     sql"""

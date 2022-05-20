@@ -1,25 +1,24 @@
 package moderator
 
 import cats.effect.IO
-import data.dto.{Lesson, User}
+import data.dao.UserDao
+import data.dto.Lesson
 
 trait ModeratorRepository {
 
-    def isMod(userId: Long): IO[Boolean]
-
-    def blockUser(userId: Long): IO[Boolean]
+    def blockUser(userId: Long): IO[Int]
 
     def closeAllSessions(userId: Long): IO[Int]
 
-    def unblockUser(userId: Long): IO[Boolean]
+    def unblockUser(userId: Long): IO[Int]
 
-    def deleteUser(userId: Long): IO[Boolean]
+    def deleteUser(userId: Long): IO[Int]
 
-    def deleteLesson(lessonId: Long): IO[Boolean]
+    def deleteLesson(lessonId: Long): IO[Int]
 
-    def lessonById(lessonId: Long): IO[Lesson]
+    def lessonById(lessonId: Long): IO[Option[Lesson]]
 
-    def userById(userId: Long): IO[User]
+    def userById(userId: Long): IO[Option[UserDao]]
 
 
 }
