@@ -1,0 +1,121 @@
+#### create student1
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "Student1",
+  "firstname": "Student1",
+  "surname": "Student1",
+  "password": "Student1",
+  "email": "Student1",
+  "phoneNumber": "Student1",
+  "sex": "Male",
+  "userType": "StudentType"
+}
+
+### login student1
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "Student1",
+  "password": "Student1"
+}
+
+### logout student1
+GET 127.0.0.1:8080/api/user/logout
+Content-Type: application/json
+Authorization: cf20f476-e564-458d-a236-766671c546f4
+
+### delete student1
+DELETE 127.0.0.1:8080/api/user/delete/3
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### profile student1
+GET 127.0.0.1:8080/api/user/profile
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### teacher list student1
+GET 127.0.0.1:8080/api/student/all_teachers
+Content-Type: application/json
+
+### get teacher by id student1
+GET 127.0.0.1:8080/api/student/teacher/4
+Content-Type: application/json
+
+### get lessons by teacher id student1
+GET 127.0.0.1:8080/api/student/lessons/4
+Content-Type: application/json
+
+### get lesson by id student1
+GET 127.0.0.1:8080/api/student/lesson/4
+Content-Type: application/json
+
+
+### get sighed up lesson student1
+GET 127.0.0.1:8080/api/student/your-lesson/4
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### sign up student1
+POST 127.0.0.1:8080/api/student/lesson/4/sign-up
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### cash in student1
+POST 127.0.0.1:8080/api/student/cash-in
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+{
+  "amount": 0
+}
+
+### sign out student1
+POST 127.0.0.1:8080/api/student/lesson/4/sign-out
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### upcoming student1
+GET 127.0.0.1:8080/api/student/upcoming-lessons
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### previous student1
+GET 127.0.0.1:8080/api/student/previous-lessons
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### next student1
+GET 127.0.0.1:8080/api/student/next
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+### evaluate teacher student1
+POST 127.0.0.1:8080/api/student/evaluate-teacher
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+{
+  "teacherId": 4,
+  "rate": 4
+}
+
+### get teacher by id student1
+GET 127.0.0.1:8080/api/student/teacher/4
+Content-Type: application/json
+
+### send homework student1
+POST 127.0.0.1:8080/api/student/lesson/homework
+Content-Type: application/json
+Authorization: 5c6e2786-68f3-4f26-9f5e-f312c8df269e
+
+{
+  "lessonId": 2,
+  "studentId": 2,
+  "homework": "hw2"
+}
+
+

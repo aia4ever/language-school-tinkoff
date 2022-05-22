@@ -6,7 +6,13 @@ import data.req.LoginReq
 import session.SessionRepository
 import util.ApiErrors.{InvalidLoginPasswordError, InvalidSessionError, SomethingWentWrongError, UserNotFoundError}
 
+
 class UserService(userRepository: UserRepository, sessionRepository: SessionRepository) {
+
+  def userId(session: String): IO[Long] = sessionRepository.getIdBySession(session).map {
+    case Some(id) => id
+    case None => throw InvalidSessionError
+  }
 
   def create(insert: User.Insert): IO[User] = userRepository.createUser(insert).map(_.toUser)
 
@@ -26,21 +32,13 @@ class UserService(userRepository: UserRepository, sessionRepository: SessionRepo
 
   def delete(session: String, id: Long): IO[Int] =
     for {
-      userIdOpt <- sessionRepository.getIdBySession(session)
-      userId = userIdOpt match {
-        case Some(id) => id
-        case None => throw InvalidSessionError
-      }
+      userId <- userId(session)
       res <- if (userId == id) userRepository.deleteById(userId)
       else throw SomethingWentWrongError
     } yield res
 
   def getUser(session: String): IO[User] = for {
-    userIdOpt <- sessionRepository.getIdBySession(session)
-    userId = userIdOpt match {
-      case Some(id) => id
-      case None => throw InvalidSessionError
-    }
+    userId <- userId(session)
     userOpt <- userRepository.getUserById(userId)
     res = userOpt match {
       case Some(us) => us.toUser

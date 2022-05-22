@@ -3,6 +3,7 @@ package teacher
 import cats.effect.IO
 import data.dao.TeacherDao
 import data.dto.Lesson
+import data.req.LessonUpdateReq
 import doobie.implicits._
 import doobie.implicits.legacy.instant._
 
@@ -12,7 +13,7 @@ import java.time.Instant
 trait TeacherRepository {
   def deleteLesson(lessonId: Long, teacherId: Long): IO[Int]
 
-  def updateLesson(lesson: Lesson, teacherId: Long): IO[Lesson]
+  def updateLesson(lesson: LessonUpdateReq): IO[Lesson]
 
   def getLesson(lessonId: Long, teacherId: Long): IO[Option[Lesson]]
 

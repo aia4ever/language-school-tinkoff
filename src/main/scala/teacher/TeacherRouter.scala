@@ -2,9 +2,8 @@ package teacher
 
 import cats.effect.IO
 import data.dto.{Lesson, Teacher}
-import data.req.{BioReq, WithdrawalReq}
+import data.req.{BioReq, LessonUpdateReq, WithdrawalReq}
 import io.circe.generic.auto._
-import io.circe.syntax.EncoderOps
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{EntityEncoder, HttpRoutes}
@@ -13,8 +12,8 @@ import util.Util.{auth, rest}
 
 object TeacherRouter {
 
-  implicit val teacherEncoder: EntityEncoder[IO, Teacher] = jsonEncoderOf[IO, Teacher]
-  implicit val lessonEncoder: EntityEncoder[IO, Lesson] = jsonEncoderOf[IO, Lesson]
+  private implicit val teacherEncoder: EntityEncoder[IO, Teacher] = jsonEncoderOf[IO, Teacher]
+  private implicit val lessonEncoder: EntityEncoder[IO, Lesson] = jsonEncoderOf[IO, Lesson]
 
 
   def teacherRouter(teacherService: TeacherService): HttpRoutes[IO] = {
@@ -26,12 +25,6 @@ object TeacherRouter {
       case req@POST -> Root / "bio-update" => req.decodeJson[BioReq]
         .flatMap(insert => auth(req).flatMap(teacherService.bioUpdate(_, insert)))
         .forbidden
-
-      case GET -> Root / "all_teachers" => teacherService.allTeachers
-        .flatMap(res => Ok(res.asJson))
-
-      case GET -> Root / "teacher" / LongVar(teacherId) => teacherService.findTeacher(teacherId)
-        .notFound
 
       case req@GET -> Root / "upcoming-lessons" => auth(req).flatMap(teacherService.upcoming)
         .forbidden
@@ -46,7 +39,7 @@ object TeacherRouter {
         .flatMap(teacherService.getYourLesson(_, lessonId))
         .forbidden
 
-      case req@POST -> Root / "lesson" => req.decodeJson[Lesson]
+      case req@POST -> Root / "lesson" => req.decodeJson[LessonUpdateReq]
         .flatMap(insert => auth(req).flatMap(teacherService.updateLesson(_,insert)))
         .forbidden
 

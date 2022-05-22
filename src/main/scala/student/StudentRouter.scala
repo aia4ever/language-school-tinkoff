@@ -20,7 +20,13 @@ object StudentRouter {
   def studentRouter(studentService: StudentService): HttpRoutes[IO] = {
     HttpRoutes.of {
 
-      case GET -> Root / "lessons" / LongVar(teacherId) => studentService.getLessonByTeacher(teacherId)
+      case GET -> Root / "all_teachers" => studentService.allTeachers
+        .flatMap(res => Ok(res.asJson))
+
+      case GET -> Root / "teacher" / LongVar(teacherId) => studentService.findTeacher(teacherId)
+        .notFound
+
+      case GET -> Root / "lessons" / LongVar(teacherId) => studentService.getLessonsByTeacher(teacherId)
         .flatMap(res => Ok(res.asJson))
 
       case GET -> Root / "lesson" / LongVar(lessonId) => studentService.getLesson(lessonId)
@@ -38,17 +44,17 @@ object StudentRouter {
 
       case req@POST -> Root / "lesson" / LongVar(lessonId) / "sign-out" =>
         auth(req).flatMap( studentService.signOut(_, lessonId))
-        .flatMap(res => Ok(res.asJson))
+        .forbidden
 
       case req@GET -> Root / "upcoming-lessons" =>
         auth(req).flatMap(studentService.upcomingLessons)
-        .flatMap(res => Ok(res.asJson))
+        .forbidden
 
       case req@GET -> Root / "previous-lessons" => auth(req).flatMap(studentService.previousLessons)
-        .flatMap(res => Ok(res.asJson))
+        .forbidden
 
       case req@GET -> Root / "next" => auth(req).flatMap(studentService.nextLesson)
-        .flatMap(res => Ok(res.asJson))
+        .forbidden
 
       case req@POST -> Root / "evaluate-teacher" => req.decodeJson[GradeReq]
         .flatMap(request => auth(req).flatMap(studentService.evaluateTeacher(_, request)))

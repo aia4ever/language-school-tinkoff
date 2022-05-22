@@ -25,5 +25,7 @@ object ApiErrors {
   object BusyError extends Exception("You have another activity at this time") with NoStackTrace
 
   object NoLessonError extends Exception("You don't have next lesson") with NoStackTrace
+
+  object NoSessionError extends Exception("No session") with NoStackTrace
   
 }

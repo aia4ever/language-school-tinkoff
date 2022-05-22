@@ -35,7 +35,7 @@ trait StudentRepository {
 
   def homework(lessonId: Long, studentId: Long, homework: String): IO[Lesson]
 
-  def studentLesson(lessonId: Long, studentId: Long): IO[Lesson]
+  def studentLesson(lessonId: Long, studentId: Long): IO[Option[Lesson]]
 }
 
 

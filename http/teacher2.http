@@ -1,0 +1,41 @@
+#### create teacher2
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "teacher2",
+  "firstname": "teacher2",
+  "surname": "teacher2",
+  "password": "teacher2",
+  "email": "teacher2",
+  "phoneNumber": "teacher2",
+  "sex": "Male",
+  "userType": "TeacherType"
+}
+
+### login teacher2
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "teacher2",
+  "password": "teacher2"
+}
+
+### logout teacher2
+GET 127.0.0.1:8080/api/user/logout
+Content-Type: application/json
+Authorization: acf82c02-0faf-4bef-91a4-62aa26d561a8
+
+
+###
+POST 127.0.0.1:8080/api/teacher/new_lesson
+Content-Type: application/json
+Authorization: 2dc95121-8c09-43ff-866b-00ce87494c09
+
+{
+"teacherId": 6,
+"date": "2024-05-01T01:01:00Z",
+"price": 500.0,
+"zoomLink": "zoomzoom"
+}

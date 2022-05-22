@@ -2,6 +2,9 @@ package util
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeId
+import config.DI.ResTransactor
+import doobie.free.connection.ConnectionIO
+import doobie.implicits._
 import io.circe.Encoder
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -11,13 +14,17 @@ import org.http4s.headers.Authorization
 import org.http4s.{Request, Response}
 
 
-
 object Util {
 
   def auth(req: Request[IO]): IO[String] = req.headers.get(Authorization.name) match {
     case Some(s) => s.head.value.pure[IO]
     case None => IO.raiseError(new Exception("no session"))
   }
+
+  implicit class dbConnection[T](cio: ConnectionIO[T]) {
+    def cast(xa: ResTransactor[IO]): IO[T] = xa.use(cio.transact(_))
+  }
+
   implicit class rest[T](io: IO[T]) {
     def forbidden(implicit enc: Encoder[T]): IO[Response[IO]] =
       io
@@ -32,4 +39,5 @@ object Util {
           NotFound(err.getMessage.asJson))
 
   }
+
 }

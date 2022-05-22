@@ -9,7 +9,7 @@ case class Student(
                     surname: String,
                     sex: Sex
                   ) {
-  def toInsert: Insert = Insert(id, firstname, surname, sex.toString)
+  lazy val toInsert: Insert = Insert(id, firstname, surname, sex.toString)
 }
 
 

@@ -1,0 +1,68 @@
+### create mod1
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "Moderator1",
+  "firstname": "Moderator1",
+  "surname": "Moderator1",
+  "password": "Moderator1",
+  "email": "Moderator1",
+  "phoneNumber": "Moderator1",
+  "sex": "Male",
+  "userType": "ModeratorType"
+}
+
+### create mod2
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "Moderator2",
+  "firstname": "Moderator2",
+  "surname": "Moderator2",
+  "password": "Moderator2",
+  "email": "Moderator2",
+  "phoneNumber": "Moderator2",
+  "sex": "Male",
+  "userType": "ModeratorType"
+}
+
+### login mod1
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "Moderator1",
+  "password": "Moderator1"
+}
+
+### block mod1
+POST 127.0.0.1:8080/api/moderator/block/6
+Content-Type: application/json
+Authorization: 83137509-24de-4e78-aa19-95a075ef9b3c
+
+### unblock mod1
+POST 127.0.0.1:8080/api/moderator/unblock/6
+Content-Type: application/json
+Authorization: 83137509-24de-4e78-aa19-95a075ef9b3c
+
+### delete user mod1
+DELETE 127.0.0.1:8080/api/moderator/delete/user/6
+Content-Type: application/json
+Authorization: 83137509-24de-4e78-aa19-95a075ef9b3c
+
+### delete lesson mod1
+DELETE 127.0.0.1:8080/api/moderator/delete/lesson/3
+Content-Type: application/json
+Authorization: 83137509-24de-4e78-aa19-95a075ef9b3c
+
+### get lesson  mod1
+GET 127.0.0.1:8080/api/moderator/lesson/6
+Content-Type: application/json
+Authorization: 83137509-24de-4e78-aa19-95a075ef9b3c
+
+### get user  mod1
+GET 127.0.0.1:8080/api/moderator/user/2
+Content-Type: application/json
+Authorization: 83137509-24de-4e78-aa19-95a075ef9b3c

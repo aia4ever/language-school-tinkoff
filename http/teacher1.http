@@ -1,0 +1,100 @@
+#### create teacher1
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "teacher1",
+  "firstname": "teacher1",
+  "surname": "teacher1",
+  "password": "teacher1",
+  "email": "teacher1",
+  "phoneNumber": "teacher1",
+  "sex": "Male",
+  "userType": "TeacherType"
+}
+
+### login teacher1
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "teacher1",
+  "password": "teacher1"
+}
+
+### logout teacher1
+GET 127.0.0.1:8080/api/user/logout
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+### new lesson teacher1
+POST 127.0.0.1:8080/api/teacher/new_lesson
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+{
+  "teacherId": 4,
+  "date": "2027-05-01T01:01:00Z",
+  "price": 500.0,
+  "zoomLink": "zoomzoom"
+}
+
+### update bio teacher1
+POST 127.0.0.1:8080/api/teacher/bio-update
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+{
+  "bio": "new bio1"
+}
+
+### upcoming teacher1
+GET 127.0.0.1:8080/api/teacher/upcoming-lessons
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+### previous teacher1
+GET 127.0.0.1:8080/api/teacher/previous-lessons
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+### next teacher1
+GET 127.0.0.1:8080/api/teacher/next-lesson
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+### get lesson teacher1
+GET 127.0.0.1:8080/api/teacher/lesson/2
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+### update lesson teacher1
+POST 127.0.0.1:8080/api/teacher/lesson
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+{
+  "id": 3,
+  "zoomLink": "String",
+  "homework": "String",
+  "mark": 0
+}
+
+### delete lesson teacher1
+DELETE 127.0.0.1:8080/api/teacher/lesson/7
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+### withdrawal teacher
+POST 127.0.0.1:8080/api/teacher/withdrawal
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4
+
+{
+  "amount": 100
+}
+
+### make payment
+POST 127.0.0.1:8080/api/teacher/payment/2
+Content-Type: application/json
+Authorization: 9ad394a7-0c3c-48e5-ab18-402ced631ef4

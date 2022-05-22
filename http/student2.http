@@ -1,0 +1,33 @@
+#### create student2
+POST 127.0.0.1:8080/api/user/create
+Content-Type: application/json
+
+{
+  "login": "Student2",
+  "firstname": "Student2",
+  "surname": "Student2",
+  "password": "Student2",
+  "email": "Student2",
+  "phoneNumber": "Student2",
+  "sex": "Male",
+  "userType": "StudentType"
+}
+
+### login student2
+POST 127.0.0.1:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "Student2",
+  "password": "Student2"
+}
+
+### logout student2
+GET 127.0.0.1:8080/api/user/logout
+Content-Type: application/json
+Authorization: cf20f476-e564-458d-a236-766671c546f4
+
+### delete student2
+DELETE 127.0.0.1:8080/api/user/delete/1
+Content-Type: application/json
+Authorization: cf20f476-e564-458d-a236-766671c546f4

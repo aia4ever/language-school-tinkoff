@@ -4,21 +4,27 @@ import data.dao.TeacherDao
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 import doobie.implicits.legacy.instant._
+import util.TeacherType
 
 
 object TeacherDictionary {
+
+  private val teacherType: String = TeacherType.toString
+
   def getTeacher(teacherId: Long): ConnectionIO[Option[TeacherDao]] =
     sql"""select ut.id, ut.firstname, ut.surname, ut.sex, te.bio, te.average_grade, te.grade_amount
-      from user_table ut
-          left join teacher_extension te on ut.id = te.teacher_id and ut.user_type = 'TeacherType'
-      where ut.id = $teacherId
-       """.query[TeacherDao].option
+        from user_table ut
+        left join teacher_extension te on ut.id = te.teacher_id
+        where ut.id = $teacherId and ut.user_type = $teacherType
+   """.query[TeacherDao].option
+
 
   def getAllTeachers: ConnectionIO[List[TeacherDao]] =
     sql"""
       select ut.id, ut.firstname, ut.surname, ut.sex, te.bio, te.average_grade, te.grade_amount
       from user_table ut
-          left join teacher_extension te on ut.id = te.teacher_id and ut.user_type = 'TeacherType'
+          left join teacher_extension te on ut.id = te.teacher_id
+            where ut.user_type = $teacherType
        """.query[TeacherDao].stream.compile.toList
 
   def teacherGrade(teacherId: Long): ConnectionIO[Option[(Double, Int)]] =

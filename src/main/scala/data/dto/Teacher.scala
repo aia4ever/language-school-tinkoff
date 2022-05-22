@@ -13,7 +13,7 @@ case class Teacher(
                   averageGrade: Option[Double],
                   gradeAmount: Option[Int]
                   ) {
-  def toInsert: Insert = Insert(id, firstname, surname, sex.toString, bio, averageGrade, gradeAmount)
+  lazy val toInsert: Insert = Insert(id, firstname, surname, sex.toString, bio, averageGrade, gradeAmount)
 }
 
 

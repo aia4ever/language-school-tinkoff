@@ -1,6 +1,7 @@
 package util.dictionary
 
 import data.dto.Lesson
+import data.req.LessonUpdateReq
 import doobie.Fragment
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
@@ -13,14 +14,14 @@ import java.time.temporal.ChronoUnit
 
 object LessonDictionary {
 
-  lazy val cols: Seq[String] =
-    Seq("id", "teacher_id", "lesson_date", "price", "zoom_link", "student_id", "homework", "answer", "mark", "purchased")
+  private lazy val cols: Seq[String] =
+    Seq("id", "teacher_id", "lesson_date", "price", "zoom_link", "student_id", "homework", "answer", "mark", "is_purchased")
 
-  lazy val base =
+  private lazy val base =
     sql"""select id, teacher_id, lesson_date, price, zoom_link, student_id, homework, answer, mark, is_purchased
          from lesson"""
 
-  lazy val userTypeMatch: Map[UserType, Fragment] = Map(
+  private lazy val userTypeMatch: Map[UserType, Fragment] = Map(
     (StudentType, fr" and student_id = "),
     (TeacherType, fr" and teacher_id = ")
   )
@@ -31,14 +32,10 @@ object LessonDictionary {
       .update
       .withUniqueGeneratedKeys[Lesson](cols: _*)
 
-  def updateLesson(lesson: Lesson, teacherId: Long): ConnectionIO[Lesson] =
+  def updateLesson(lesson: LessonUpdateReq): ConnectionIO[Lesson] =
     sql"""update lesson
-        set lesson_date = $lesson.date,
-            price = $lesson.price,
-            zoom_link = $lesson.zoomLink,
-            homework = $lesson.homework,
-            mark = $lesson.mark
-            where id = $lesson.id and teacher_id = $teacherId
+        set homework = ${lesson.homework}, zoom_link = ${lesson.zoomLink}, mark = ${lesson.mark}
+            where id = ${lesson.id}
        """.update
       .withUniqueGeneratedKeys[Lesson](cols: _*)
 
@@ -47,17 +44,17 @@ object LessonDictionary {
       .update.run
 
   def getLesson(lessonId: Long, userId: Long, userType: UserType): ConnectionIO[Option[Lesson]] =
-    (base ++ fr" where id = $lessonId" ++ userTypeMatch(userType) ++ fr"$userId")
+    (base ++ fr" where id = $lessonId" ++ userTypeMatch(userType) ++ fr" $userId")
       .query[Lesson].option
 
   def upcomingLessons(userId: Long, userType: UserType): ConnectionIO[List[Lesson]] =
     (base ++
-      fr"where lesson_date >=current_timestamp" ++ userTypeMatch(userType) ++ fr"$userId" ++ fr" order by lesson_date")
+      fr" where lesson_date >= current_timestamp " ++ userTypeMatch(userType) ++ fr" $userId" ++ fr" order by lesson_date")
       .query[Lesson].stream.compile.toList
 
   def previousLessons(userId: Long, userType: UserType): ConnectionIO[List[Lesson]] =
     (base ++
-      fr" where lesson_date < current_timestamp" ++ userTypeMatch(userType) ++ fr"$userId" ++ fr" order by lesson_date")
+      fr" where lesson_date < current_timestamp " ++ userTypeMatch(userType) ++ fr" $userId" ++ fr" order by lesson_date")
       .query[Lesson].stream.compile.toList
 
   def getEmptyLesson(lessonId: Long): ConnectionIO[Option[Lesson]] =
@@ -68,10 +65,6 @@ object LessonDictionary {
     (base ++ fr" where id = $lessonId and student_id = $studentId")
       .query[Lesson].option
 
-  def getPreviousLessons(userId: Long, userType: UserType): ConnectionIO[List[Lesson]] =
-    (base ++
-      fr" where lesson_date < current_timestamp" ++ userTypeMatch(userType) ++ fr"$userId" ++ fr" order by lesson_date")
-      .query[Lesson].stream.compile.toList
 
   def lessonsByTeacher(teacherId: Long): ConnectionIO[List[Lesson]] =
     (base ++ fr" where teacher_id = $teacherId and student_id is null")
@@ -81,7 +74,7 @@ object LessonDictionary {
     sql"""
         update lesson
         set student_id = $studentId
-            where id = $lessonId and lesson_date >= current_timestamp
+            where id = $lessonId
        """
       .update
       .withUniqueGeneratedKeys[Lesson](cols: _*)
@@ -92,19 +85,15 @@ object LessonDictionary {
         update lesson
         set student_id = null
             where id = $lessonId and student_id = $studentId
-            and lesson_date >= current_timestamp
        """
       .update.run
 
-  def getUpcomingLessons(userId: Long, userType: UserType): ConnectionIO[List[Lesson]] =
-    (base ++
-      fr" where lesson_date >=current_timestamp" ++ userTypeMatch(userType) ++ fr"$userId" ++ fr" order by lesson_date")
-      .query[Lesson].stream.compile.toList
+
 
   def homework(lessonId: Long, studentId: Long, homework: String): ConnectionIO[Lesson] =
     sql"""update lesson
-        set homework = $homework
-            where id = $lessonId and student_id = $studentId
+        set answer = $homework
+            where id = $lessonId
        """.update
       .withUniqueGeneratedKeys[Lesson](cols: _*)
 
