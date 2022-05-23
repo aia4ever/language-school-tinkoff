@@ -64,11 +64,11 @@ class StudentService(userRepository: UserRepository,
       }
       isNotBusy <- studentRepository.getLessonsByDate(studentId, lesson.date).map(_.isEmpty)
       balance <- userRepository.balance(studentId)
-      res <- if (balance.amount >= lesson.price && isNotBusy && lesson.date.isAfter(Instant.now())) {
+      _ <- if (balance.amount >= lesson.price && isNotBusy && lesson.date.isAfter(Instant.now())) {
         studentRepository.reserve(studentId, lesson.price)
-        studentRepository.signUp(lessonId, studentId)
       }
       else IO.raiseError(AccessDeniedError)
+      res <- studentRepository.signUp(lessonId, studentId)
     } yield res
 
 
@@ -80,13 +80,14 @@ class StudentService(userRepository: UserRepository,
         case Some(ls) => ls
         case None => throw LessonNotFoundError
       }
-      res <- {
+      _ <- {
         if (lesson.date.isAfter(Instant.now())) {
           studentRepository.unreserve(studentId, lesson.price)
-          studentRepository.signOut(lessonId, studentId)
+
         }
         else IO.raiseError(AccessDeniedError)
       }
+      res <- studentRepository.signOut(lessonId, studentId)
     } yield res
 
   def upcomingLessons(session: String): IO[List[Lesson]] =
@@ -115,7 +116,8 @@ class StudentService(userRepository: UserRepository,
     isTeacher <- teacherRepository.getTeacher(gradeReq.teacherId).map(_.fold(false)(_ => true))
     grade <- teacherRepository.teacherGrade(gradeReq.teacherId).map(_.fold((0.0, 0))(identity))
     newGrade = (grade._1 * grade._2 + gradeReq.rate) / (grade._2 + 1)
-    res <- if (isTeacher && isStudent) studentRepository.evaluateTeacherUpdate(gradeReq.teacherId, newGrade, grade._2 + 1)
+    res <- if (isTeacher && isStudent)
+      studentRepository.evaluateTeacherUpdate(gradeReq.teacherId, newGrade, grade._2 + 1)
     else IO.raiseError(AccessDeniedError)
   } yield res
 
@@ -129,7 +131,8 @@ class StudentService(userRepository: UserRepository,
   def sendHomework(session: String, homeworkReq: HomeworkReq): IO[Lesson] =
     for {
       studentId <- studentId(session)
-      res <- if (studentId == homeworkReq.studentId) studentRepository.homework(homeworkReq.lessonId, studentId, homeworkReq.homework)
+      res <- if (studentId == homeworkReq.studentId)
+        studentRepository.homework(homeworkReq.lessonId, studentId, homeworkReq.homework)
       else throw AccessDeniedError
     } yield res
 }
