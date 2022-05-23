@@ -16,8 +16,7 @@ lazy val doobie = Seq(
   "org.tpolecat" %% "doobie-postgres" % doobieVersion,
   "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion,
   "org.tpolecat" %% "doobie-hikari" % doobieVersion,
-  "org.tpolecat" %% "doobie-specs2" % doobieVersion % "test",
-  "org.tpolecat" %% "doobie-scalatest" % doobieVersion % "test",
+
 )
 
 lazy val http4s = Seq(
@@ -29,7 +28,7 @@ lazy val http4s = Seq(
 
 libraryDependencies ++= Seq(
 
-  "io.circe"        %% "circe-generic" % "0.14.1",
+  "io.circe" %% "circe-generic" % "0.14.1",
 
   "org.postgresql" % "postgresql" % "42.3.4",
 
@@ -49,7 +48,7 @@ libraryDependencies ++= Seq(
 
   "org.mockito" % "mockito-core" % "3.12.4" % "test",
 
-  "org.mockito" %% "mockito-scala-scalatest" % "1.17.5"
+  "org.mockito" %% "mockito-scala-scalatest" % "1.17.5" % "test"
 ) ++ doobie ++ http4s
 
 enablePlugins(FlywayPlugin)

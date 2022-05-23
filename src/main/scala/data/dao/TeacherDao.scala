@@ -1,7 +1,6 @@
 package data.dao
 
 import data.dto.Teacher
-import util.Implicits._
 
 case class TeacherDao(
                        id: Long,

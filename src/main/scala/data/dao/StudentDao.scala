@@ -1,7 +1,6 @@
 package data.dao
 
 import data.dto.Student
-import util.Implicits._
 
 case class StudentDao(
                        id: Long,

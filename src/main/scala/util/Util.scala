@@ -12,13 +12,14 @@ import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.headers.Authorization
 import org.http4s.{Request, Response}
+import util.ApiErrors.NoSessionError
 
 
 object Util {
 
   def auth(req: Request[IO]): IO[String] = req.headers.get(Authorization.name) match {
     case Some(s) => s.head.value.pure[IO]
-    case None => IO.raiseError(new Exception("no session"))
+    case None => IO.raiseError(NoSessionError)
   }
 
   implicit class dbConnection[T](cio: ConnectionIO[T]) {

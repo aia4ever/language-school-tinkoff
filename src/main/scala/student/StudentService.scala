@@ -7,8 +7,8 @@ import session.SessionRepository
 import teacher.TeacherRepository
 import user.UserRepository
 import util.ApiErrors._
-import util.Implicits._
 import util.StudentType
+import util.UserType.stringToUserType
 
 import java.time.Instant
 

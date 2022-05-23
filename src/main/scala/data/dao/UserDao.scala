@@ -1,7 +1,6 @@
 package data.dao
 
 import data.dto.User
-import util.Implicits._
 
 case class UserDao(
                     id: Long,
